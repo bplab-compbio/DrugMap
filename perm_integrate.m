@@ -1,6 +1,6 @@
 function [p] = perm_integrate(null_dist,observed,sidedness)
 % Integrates a null distribution of permutations to calculate p value
-% Need to provide observed as the value in the right tail
+% Need to provide observed for lower limit in integral
     
     swtch = 0;
     h = histogram(null_dist);
