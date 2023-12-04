@@ -4,7 +4,7 @@ function [nl] = rintsct(nd,sd,p,i)
 %   nd:= number of draws
 %   sd:= size of draws
 %   p:= vector or "pile" of elements to be drawn from
-%   i:= vector or "interesting" elements to be intersected
+%   i:= vector or "interesting" elements to be intersected with
 
     % Pre-allocate memory
     nl = nan(nd,1);
