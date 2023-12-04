@@ -1,4 +1,4 @@
-function [p] = perm_integrate2(null_dist,observed)
+function [p] = perm_integrate(null_dist,observed)
 % Integrates a null distribution of permutations to calculate p value
 % Need to provide observed as the value in tail
     
