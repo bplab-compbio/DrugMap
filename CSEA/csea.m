@@ -48,12 +48,10 @@ function [result] = csea(n,s,np,names,sets)
         names(any(isnan(d(:,1:2)),2)) = [];
         d(any(isnan(d(:,1:2)),2),:) = [];  
 
-
         % get Benjamini-Hochberg FDR 
         % (Benjamini, Y., and Hochberg, Y. 1995. Controlling the false discovery rate: A practical and powerful approach to multiple testing. J. Royal Stat. Soc. 57:289–300.)        
         d(:,5) = mafdr(d(:,1),"BHFDR","true");
       
-    
         % summarize results in table
         result = [table(names),splitvars(table(d))]; 
         result.Properties.VariableNames = ["set name"
