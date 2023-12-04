@@ -1,7 +1,6 @@
 function [nl] = rintsct(nd,sd,vp,vi)
 % Draw random elements from a vector
-% Intersect random draws with vector of interest
-% Tabulate size of intersection along the way
+% Intersect random draws with a pre-specified vector of interest
 %   nd:= number of draws
 %   sd:= size of draws
 %   vp:= vector or "pile" of elements to be drawn from (i.e. vector_pile)
