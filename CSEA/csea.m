@@ -6,7 +6,6 @@ function [result] = csea(n,s,np,names,sets)
 %   names:= string vector which contains set names
 %   sets:= cell vector, wherein each cell contains a string vector of cysteines
 
-
     if nargin ~= 5
         % check for full complement of inputs
         error("incorrect number of inputs, please check!")
@@ -23,7 +22,7 @@ function [result] = csea(n,s,np,names,sets)
             % get intersection btw. cys of interest and cysteine set
             t = length(intersect(s,c));
         
-            if t > 0                    
+            if t > 0                   
                 % integrate null distribution
                 p = perm_integrate(rintsct(np,length(s),n,c),t);
 
@@ -36,15 +35,15 @@ function [result] = csea(n,s,np,names,sets)
 
             end
 
-            % keep track of progress
+            % track progress
             disp(100 * x/length(sets) + "% done!")
         end    
 
-        % delete results with 0 overlap or failed p-value calculation
+        % delete results with 0 overlap or skipped p-value calculation
         names(any(isnan(d(:,1:2)),2)) = [];
         d(any(isnan(d(:,1:2)),2),:) = [];  
 
-        % get Benjamini-Hochberg FDR 
+        % calculate Benjamini-Hochberg FDR 
         % (Benjamini, Y., and Hochberg, Y. 1995. Controlling the false discovery rate: A practical and powerful approach to multiple testing. J. Royal Stat. Soc. 57:289–300.)        
         d(:,5) = mafdr(d(:,1),"BHFDR","true");
       
