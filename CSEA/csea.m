@@ -29,11 +29,11 @@ function [result] = csea(n,s,np,names,sets)
                 for j = 1:np, nl(j) = length(intersect(n(randi([1,length(n)],[1,length(s)])),c)); end
         
                 % integrate null distribution
-                p = perm_integrate2(rintsct(np,length(s),n,c),t);
+                p = perm_integrate(rintsct(np,length(s),n,c),t);
 
                 % check if result is potentially significant; if so, dial in p-value with 1000 perms
                 % this step is optional and can be omitted to improve speed
-                if -log10(p) > 2, p = perm_integrate2(rintsct(1000,length(s),n,c),t); end
+                if -log10(p) > 2, p = perm_integrate(rintsct(1000,length(s),n,c),t); end
 
                 % collect results
                 d(x,1:4) = [p,t,(t+1)/(median(nl,"omitnan")+1),length(c)];
