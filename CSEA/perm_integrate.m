@@ -1,8 +1,6 @@
 function [p] = perm_integrate(null_dist,observed)
 % Integrates a null distribution of permutations to calculate p value
 % Need to provide observed as the value in tail
-    
-    swtch = 0;
 
     % make histogram of null distribution
     h = histogram(null_dist);
@@ -19,10 +17,6 @@ function [p] = perm_integrate(null_dist,observed)
         % get ordinates of null distribution
         v = h.Values;
         v = v/sum(v);
-    
-        % if no intersections in null distribution, add a bit of density
-        if swtch == 1, v = [v,0.001]; end
-        if swtch == 2, v = [v,0.001,0.001]; end
     
         % fit gaussian
         f = fit(bb,v','gauss1');
