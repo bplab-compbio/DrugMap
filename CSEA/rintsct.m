@@ -1,6 +1,6 @@
 function [nl] = rintsct(nd,sd,vp,vi)
 % "Random intersect" draws random elements from a vector
-% ... and intersects draws with a pre-specified vector of interest
+% ... and tracks size of overlap w/ elements of interest
 %   nd:= number of draws
 %   sd:= size of draws
 %   p:= vector or "pile" of elements to be drawn from
