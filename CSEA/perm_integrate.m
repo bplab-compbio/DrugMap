@@ -13,8 +13,6 @@ function [p] = perm_integrate2(null_dist,observed)
     % abscissae of interpolated gaussian
     for j = 1:length(b) - 1, bb = [bb;(b(j + 1) + b(j))/2]; end    
 
-
-
     % if we have enough abscissae
     if length(bb) > 3
 
