@@ -14,7 +14,7 @@ function [p] = perm_integrate(null_dist,observed)
     for j = 1:length(b) - 1, bb = [bb;(b(j + 1) + b(j))/2]; end    
 
     % if we have enough abscissae
-    if length(bb) > 3
+    if length(bb) > 2
 
         % get ordinates of null distribution
         v = h.Values;
@@ -34,6 +34,8 @@ function [p] = perm_integrate(null_dist,observed)
         nom = integral(@(x) fun(x,f.a1,f.b1,f.c1),observed,inf,'RelTol',1e-4,'AbsTol',1e-6);   
         
         p = nom/tot;
+
+    % else, skip p-value calculation
     else
         p = NaN;
     end
