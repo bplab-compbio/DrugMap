@@ -3,15 +3,15 @@ function [nl] = rintsct(nd,sd,vp,vi)
 % ... and intersects draws with a pre-specified vector of interest
 %   nd:= number of draws
 %   sd:= size of draws
-%   vp:= vector or "pile" of elements to be drawn from (i.e. vector_pile)
-%   vi:= vector to be intersected with (i.e. vector_interest)
+%   p:= vector or "pile" of elements to be drawn from
+%   i:= vector or "interesting" elements to be intersected
 
     % Pre-allocate memory
     nl = nan(nd,1);
     
     % Intersect random draws of elements with a vector of interest
     for j = 1:nd
-        nl(j) = length(intersect(vp(randi([1,length(vp)],[1,sd])),vi)); 
+        nl(j) = length(intersect(p(randi([1,length(p)],[1,sd])),i)); 
     end
 
 end
