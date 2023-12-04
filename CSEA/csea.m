@@ -23,11 +23,7 @@ function [result] = csea(n,s,np,names,sets)
             % get intersection btw. cys of interest and cysteine set
             t = length(intersect(s,c));
         
-            if t > 0
-            % get null distribution
-                nl = nan(np,1);
-                for j = 1:np, nl(j) = length(intersect(n(randi([1,length(n)],[1,length(s)])),c)); end
-        
+            if t > 0                    
                 % integrate null distribution
                 p = perm_integrate(rintsct(np,length(s),n,c),t);
 
