@@ -27,8 +27,7 @@ function [p] = perm_integrate(null_dist,observed)
         % fit gaussian
         f = fit(bb,v','gauss1');
         fun = @(x,a,b,c) a*exp(-1*((x-b)/c).^2);
-    
-    
+        
         % integrate
         tot = integral(@(x) fun(x,f.a1,f.b1,f.c1),-1*inf,inf,'RelTol',1e-4,'AbsTol',1e-6);
         nom = integral(@(x) fun(x,f.a1,f.b1,f.c1),observed,inf,'RelTol',1e-4,'AbsTol',1e-6);   
