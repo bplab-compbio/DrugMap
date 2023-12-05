@@ -23,12 +23,18 @@ function [result] = csea(n,s,np,names,sets)
             t = length(intersect(s,c));
         
             if t > 0                   
-                % integrate null distribution
-                p = perm_integrate(rintsct(np,length(s),n,c),t);
+                % generate null distribution
+                nl = rintsct(np,length(s),n,c);
+
+                % integrate
+                p = perm_integrate(nl,t);
 
                 % check if result is potentially significant; if so, dial in p-value with 1000 perms
                 % this step is optional and can be omitted to improve speed
-                if -log10(p) > 2, p = perm_integrate(rintsct(1000,length(s),n,c),t); end
+                if -log10(p) > 2
+                    nl = rintsct(1000,length(s),n,c);
+                    p = perm_integrate(rintsct(1000,length(s),n,c),t); 
+                end
 
                 % collect results
                 d(x,1:4) = [p,t,(t+1)/(median(nl,"omitnan")+1),length(c)];
