@@ -1,10 +1,10 @@
 function [result] = csea(n,s,np,names,sets)
 % Perform Cysteine Set Enrichment Analysis (CSEA)
-%   n:= string vector of cysteines which will form the null distribution
+%   n:= string vector of cysteines which will form the null distribution (e.g. P56693 C71)
 %   s:= string vector of cysteines of interest
 %   np:= number of permutations requested by user
 %   names:= string vector which contains set names
-%   sets:= cell vector, wherein each cell contains a string vector of cysteines
+%   sets:= cell vector, wherein each cell contains a string vector of cysteines 
 
     if nargin ~= 5
         % check for full complement of inputs
