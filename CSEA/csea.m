@@ -22,7 +22,9 @@ function [result] = csea(n,s,np,names,sets)
             % get intersection btw. cys of interest and cysteine set
             t = length(intersect(s,c));
         
-            if t > 0                   
+            % if intersection is not empty
+            if t > 0                 
+
                 % generate null distribution
                 nl = rintsct(np,length(s),n,c);
 
