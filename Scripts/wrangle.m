@@ -227,7 +227,8 @@ X.pep.metox(contains(X.pep.id,"Oxidation")) = 1;
 
 
 % for each peptide, this loop is collecting metadata from fasta.mat 
-% (fasta.mat was assembled from uniprot) 
+% (fasta.mat was assembled by looping over all uniprot accessions via curl, i.e.
+% curl -H "Accept: application/xml" "https://rest.uniprot.org/uniprotkb/P12345" --) 
 sp = split(X.pep.id,"&");
 for i = 1:height(sp)
     sp2 = split(sp(i,1),';');    
