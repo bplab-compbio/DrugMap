@@ -196,7 +196,7 @@ save(in+"DrugMat\CDM.v.1.2.mat","X","-v7.3")
 
 %% annotate peptides with metadata 
 % ... like gene names, protein names, oxidation state, oncogenic variants
-P = load(in+"fasta.v.1.2.1.mat");P=P.X;
+P = load(in+"fasta.mat");P=P.X;
 sp = split(X.pep.id,"&");
 X.pep.peptide = sp(:,2);
 X.pep.annotated = sp(:,3);
@@ -226,8 +226,8 @@ X.pep.metox = false(length(X.pep.cys),1);
 X.pep.metox(contains(X.pep.id,"Oxidation")) = 1;
 
 
-% for each peptide, this loop is collecting metadata from fasta.v.1.2.1.mat 
-% (fasta.v.1.2.1.mat was assembled from uniprot) 
+% for each peptide, this loop is collecting metadata from fasta.mat 
+% (fasta.mat was assembled from uniprot) 
 sp = split(X.pep.id,"&");
 for i = 1:height(sp)
     sp2 = split(sp(i,1),';');    
@@ -297,7 +297,7 @@ save(in+"DrugMat\CDM.v.1.3.mat","X","-v7.3")
 % and corresponding metadata for cell lines
 
 % load .mat which contains CCLE metadata
-M=load(in+"DepMap_Metadata.mat");M=M.X;
+M=load(in+"CCLE.metadata.mat");M=M.X;
 
 % list out field names (it's cringe, I know)
 fld = {'DepMap_ID','cell_line_name','stripped_cell_line_name','CCLE_Name','alias','COSMICID','sex','source','RRID','WTSI_Master_Cell_ID','sample_collection_site','primary_or_metastasis','primary_disease','Subtype','age','Sanger_Model_ID','depmap_public_comments','lineage','lineage_subtype','lineage_sub_subtype','lineage_molecular_subtype','default_growth_pattern','model_manipulation','model_manipulation_details','patient_id','parent_depmap_id','Cellosaurus_NCIt_disease','Cellosaurus_NCIt_id','Cellosaurus_issues'};
@@ -419,7 +419,7 @@ X.pep.seqlen = cellfun(@length,X.pep.peptide);
 save(in+"DrugMat\CDM.v.1.5.mat","X","-v7.3")
 
 %% add domain, class, pathway information
-load(in + "cysteine.set.uniprot.mat")
+load(in + "cysteine.ontology.mat")
 
 [X.pep.domain, X.pep.class, X.pep.pathway] = deal(cell(height(X.pep.a),1));
 
@@ -488,7 +488,7 @@ qnt = 200*(qnt - 0.5);
 % this array was used for analysis
 
 %% integrate CDM with mutations
-M = load(in+"CCLE.Mutations.v.4.4.mat"); M = M.X;
+M = load(in+"CCLE.mutations.mat"); M = M.X;
 [u,col] = unique(X.line.name);
 bch = X.line.batch(col);
 bch = split(bch,'_'); bch = bch(:,1)'; ubch = unique(bch);
@@ -631,7 +631,7 @@ end
 
 save(in+"DrugMat\mutations.CDM.v.1.3.mat",'X','-v7.3')
 
-G = load(in+"genomic.coordinates.v.1.1.mat");G = G.X;
+G = load(in+"genomic.coordinates.mat");G = G.X;
 
 X.dat.chromosome_name = nan(length(X.dat.gene),1);
 for i = 1:height(X.dat.gene)
