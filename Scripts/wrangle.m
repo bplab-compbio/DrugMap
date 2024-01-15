@@ -141,7 +141,7 @@ idx = find(ismissing(X.id));
 X.id(idx) = [];
 X.a(idx,:) = [];
 
-save(in+"DrugMat\CDM.v.1.1.mat","X","-v7.3")
+save(CDM.v.1.1.mat","X","-v7.3")
 
 %% now wrangle the abundances and remove bad peptides
 
@@ -192,7 +192,7 @@ sp = split(X.pep.id,'&');
 idx = ~contains(sp(:,2),"C");
 fld = fieldnames(X.pep); for i = 1:length(fld), X.pep.(fld{i})(idx,:,:) = []; end
 
-save(in+"DrugMat\CDM.v.1.2.mat","X","-v7.3")
+save(CDM.v.1.2.mat","X","-v7.3")
 
 %% annotate peptides with metadata 
 % ... like gene names, protein names, oxidation state, oncogenic variants
@@ -292,7 +292,7 @@ for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i)) + ";"; end
 % add a field which tells you how many TMT runs a peptide was detected in
 X.pep.det = sum(~isnan(X.pep.a(:,:,4)),2);
 
-save(in+"DrugMat\CDM.v.1.3.mat","X","-v7.3")
+save(CDM.v.1.3.mat","X","-v7.3")
 
 %% where possible, add DepMap annotations 
 % and corresponding metadata for cell lines
@@ -345,7 +345,7 @@ X.line.lineage(strcmp(X.line.name,"MGG123")) = "brain";
 X.line.name = X.line.name';
 X.line.batch = X.line.batch';
 
-save(in+"DrugMat\CDM.v.1.4.mat","X","-v7.3")
+save(CDM.v.1.4.mat","X","-v7.3")
 
 %% calculate engagement
 
@@ -417,7 +417,7 @@ X.pep.det = sum(~isnan(X.pep.a(:,:,4)),2);
 X.pep.seqlen = cellfun(@length,X.pep.peptide);
 
 % et voila!
-save(in+"DrugMat\CDM.v.1.5.mat","X","-v7.3")
+save(CDM.v.1.5.mat","X","-v7.3")
 
 %% add domain, class, pathway information
 load(in + "cysteine.ontology.mat")
@@ -441,7 +441,7 @@ for i = 1:height(X.pep.a)
     disp(i/height(X.pep.a))
 end
 
-save(in+"DrugMat\CDM.v.1.6.mat","X","-v7.3")
+save(CDM.v.1.6.mat","X","-v7.3")
 
 %% further normalize engagement
 
@@ -487,6 +487,178 @@ end
 qnt = 200*(qnt - 0.5);
 
 % this array was used for analysis
+
+%% Generate table for DrugMap.net
+
+% quantile-normalize
+for i = 1:3, X.pep.eq(:,:,i) = quantilenorm(X.pep.e(:,:,i)); end
+X.pep.eq = 200 * (X.pep.eq - 0.5);
+
+% collect unique column information for each cell line
+[u,col] = unique(X.line.name);
+bch = X.line.batch(col);
+bch = split(bch,'_'); bch = bch(1,:,1)'; ubch = unique(bch);
+ach_id = X.line.DepMap_ID(col);
+lin = X.line.lineage(col);
+
+% pre-allocate memory for different arrays
+qnt = nan(height(X.pep.e),length(u),3);
+st = nan(height(X.pep.e),length(u),3);
+nd = nan(height(X.pep.e),length(u),3);
+for i = 1:length(u), qnt(:,i,:) = median(X.pep.eq(:,strcmp(X.line.name,u(i)),:),2,"omitnan"); end
+for i = 1:length(u), st(:,i,:) = std(X.pep.eq(:,strcmp(X.line.name,u(i)),:),0,2,"omitnan"); end
+for i = 1:length(u), nd(:,i,:) = sum(~isnan(X.pep.eq(:,strcmp(X.line.name,u(i)),:)),2); end
+
+% delete cysteines with unconfident detection (i.e. detected in less than 2 runs at the spectrometer)
+del = find(sum(isnan(qnt(:,:,2)),2) == sl(qnt));
+[~,i1] = unique(X.pep.acc_cys);
+i1 = setdiff(i1,del);
+
+% get unique peptides for methionine oxidations
+idcs = [];
+for i = 1:length(i1)
+    f = find(strcmp(X.pep.acc_cys,X.pep.acc_cys(i1(i))));
+
+    if length(f) == 1
+        idcs = [idcs;f];
+    else
+        m = find(~X.pep.metox(f));
+        if length(m) == 1
+            idcs = [idcs;f(m)];
+        elseif length(m) > 1
+            idcs = [idcs;f(m(1))];
+        elseif isempty(m)
+            m = find(X.pep.metox(f));
+            if length(m) == 1
+                idcs = [idcs;f(m)];
+            elseif length(m) > 1
+                idcs = [idcs;f(m(1))];
+            end
+        end
+    end    
+
+end
+
+i2 = find(X.pep.metox);
+i3 = intersect(i2,idcs);
+
+mod = X.pep.modification(i3);
+cys = X.pep.cys(i3);
+
+strs = repmat("",[length(idcs),1]);
+for i = 1:length(mod)
+    
+    s = split(cys(i),";");
+    s = s(~cellfun(@isempty,s));
+    c = str2double(s);
+    c = min(c);
+
+    s = split(mod(i),";");
+    s = s(~cellfun(@isempty,s));
+    nums = str2double(string(regexp(s,'(?<=[\(]).+(?=[\)])','match')));
+
+
+    f = find(contains(s,"Oxidation of "));
+    g = find(contains(s,"IADTB of "));
+
+    dtb = min(nums(g));
+
+    oxpos = nums(f);
+
+    pos = [];
+    if length(f) == 1
+        pos = c + oxpos - dtb;    
+        
+    elseif nnz(f) > 1
+        for j = 1:length(f)            
+            pos = [pos;c + oxpos(j) - dtb];
+        end
+        
+    end
+
+    pos = eraseBetween(strrep(join(";M"+ pos)," ",""),1,1);
+
+    strs(find(idcs == i3(i))) = pos;
+end
+
+% assemble final tables
+
+q2 = nan(length(idcs),sl(qnt),3);
+for i = 1:length(idcs)
+    q2(i,:,:) = median(qnt(strcmp(X.pep.acc_cys,X.pep.acc_cys(idcs(i))),:,:),1,"omitnan");
+end
+
+s2 = nan(length(idcs),sl(st),3);
+for i = 1:length(idcs)
+    s2(i,:,:) = median(st(strcmp(X.pep.acc_cys,X.pep.acc_cys(idcs(i))),:,:),1,"omitnan");
+end
+
+d2 = nan(length(idcs),sl(nd),3);
+for i = 1:length(idcs)
+    d2(i,:,:) = round(median(nd(strcmp(X.pep.acc_cys,X.pep.acc_cys(idcs(i))),:,:),1,"omitnan"));
+end
+
+d = [eraseBetween(X.pep.accession(idcs),1,1), ...
+    eraseBetween(X.pep.gene(idcs),1,1), ...
+    eraseBetween(X.pep.protein(idcs),1,1), ...
+    X.pep.peptide(idcs), ...
+    eraseBetween(X.pep.cys(idcs),1,1), ...
+    strs];
+
+for i = 1:height(d), for j = 1:sl(d), s = split(d(i,j),";"); if length(s) > 1, d(i,j) = strjoin(s(1:end - 1),";"); end; end; end
+
+f = splitvars(table(d));
+f.Properties.VariableNames = ["Accession","Gene","Protein","Peptide","Cysteine","Methionine Oxidation"];
+
+g2 = repmat("",[length(f.Gene),1]);
+p2 = repmat("",[length(f.Gene),1]);
+for i = 1:length(f.Gene)
+    s1 = split(f.Gene(i),";");
+    ss2 = split(f.Protein(i),";");
+    if length(s1) > 1
+        l = unique(s1);
+        if length(s1) > length(l)
+            for j = 1:length(l)
+                if nnz(strcmp(s1,l(j))) > 1
+                    ss2(strcmp(s1,l(j))) = ss2(strcmp(s1,l(j))) + "-" + string(1:nnz(strcmp(s1,l(j))))';
+                    s1(strcmp(s1,l(j))) = s1(strcmp(s1,l(j))) + "-" + string(1:nnz(strcmp(s1,l(j))))';                    
+                end
+            end
+        end
+    end
+
+    g2(i) = join(s1,";");
+    p2(i) = join(ss2,";");
+end
+
+f.Gene = g2;
+f.Protein = p2;
+
+sct = ["KB05","KB03","KB02"];
+for jj = 1:3
+    ft = [];
+    for i = 1:sl(q2), ft = [ft,[q2(:,i,jj),s2(:,i,jj),d2(:,i,jj)]]; end
+    
+    ach_id(ismissing(ach_id)) = "N/A";
+    fl = [];
+    for i = 1:sl(q2), fl = [fl,[u(i) + " (" + ach_id(i) + ")" + " Median Engagement (%)", u(i) + " (" + ach_id(i) + ")" + " Standard Deviation", u(i) + " (" + ach_id(i) + ")" + " # of Replicates"]]; end
+    t = table(ft);
+    t = splitvars(t);
+    t.Properties.VariableNames = fl;
+    
+    tb = [f,t];
+    writetable(tb,out+sct(jj) + ".v.3.xlsx")
+    disp(jj)
+end
+
+
+X.pep = rmfield(X.pep,["eq"]);
+fld = string(fieldnames(X.pep));
+for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(idcs,:,:); end
+X.pep.e = q2;
+X.pep.std = s2;
+X.pep.detections = d2;
+save("CDM.v.1.7.mat","-v7.3")
 
 %% integrate CDM with mutations
 M = load(in+"CCLE.mutations.mat"); M = M.X;
@@ -563,7 +735,7 @@ A.dat.accession_cys = X.pep.acc_cys;
 A.line.batch = bch;
 A.line.DepMap_ID = ach_id;
 A.line.stripped_cell_line_name = u';
-X = A;save(in+"DrugMat\mutations.x.CDM.v.1.1.mat",'X')
+X = A;save(mutations.x.CDM.v.1.1.mat",'X')
 
 
 X.dat.new = repmat("",[height(X.dat.mutated),sl(X.dat.mutated)]);
@@ -603,7 +775,7 @@ for i = 1:length(u)
     end   
 end
 
-save(in+"DrugMat\mutations.CDM.v.1.2.mat",'X','-v7.3')
+save(mutations.CDM.v.1.2.mat",'X','-v7.3')
 
 pos = str2double(M.Pos);
 mp = M.UniprotID + " " + M.ProteinChange;
@@ -630,7 +802,7 @@ for i = 1:length(ac)
     end
 end
 
-save(in+"DrugMat\mutations.CDM.v.1.3.mat",'X','-v7.3')
+save(mutations.CDM.v.1.3.mat",'X','-v7.3')
 
 G = load(in+"genomic.coordinates.mat");G = G.X;
 
@@ -734,5 +906,5 @@ for i = 1:length(S.pdb)
 end
 
 
-X = S; save(in+"DrugMat\structural.db.v.2.mat",'X')
+X = S; save(structural.db.v.2.mat",'X')
 
