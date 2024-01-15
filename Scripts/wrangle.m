@@ -1,4 +1,4 @@
-% get directories
+% get directories; these are just strings which shorten file paths and enable navigation of file structure
 [in,out] = ld;
 
 
@@ -10,7 +10,7 @@ subdir = string({fullfile.name})'; subdir(1:2) = [];
 for xx = 1:length(subdir)
     
     % only do this if we haven't made a .mat already    
-%     if ~isfile(in + "DrugMap\" + subdir(xx) + "\" + subdir(xx) + ".mat")
+     if ~isfile(in + "DrugMap\" + subdir(xx) + "\" + subdir(xx) + ".mat")
         tic
         clear X
 
@@ -96,10 +96,10 @@ for xx = 1:length(subdir)
         save(in + "DrugMap\" + subdir(xx) + "\" + subdir(xx) + ".mat",'X')
         toc
         disp(xx)        
-%     end
+     end
 end
 
-% % loop to merge
+% loop to merge
 dirr = "DrugMap";
 fullfile = dir(in + dirr + "\");
 subdir = string({fullfile.name})'; subdir(1:2) = []; 
@@ -151,7 +151,7 @@ str = strrep(X.batch,'.mat','');
 str2 = str;
 
 % load metadata
-t = string(readcell(in+"metadata.v.2.xlsx","sheet",2));
+t = string(readcell(in+"DrugMap.metadata.xlsx"));
 
 % organize columns of final table by name of cell line, collect metadata
 t(1,:) = [];
