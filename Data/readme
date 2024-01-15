@@ -1,0 +1,1 @@
+Each folder in this directory corresponds to the analysis of a single sample (i.e. TMT 16-plex) in the mass spectrometer. Included are MS3-level peptide ion intensities, corresponding MS2-level FDR estimates, and pre-wrangled .mat files.
