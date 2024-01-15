@@ -44,7 +44,7 @@ for xx = 1:length(subdir)
                     i2(s) = [];
                 end
 
-            % subtract abundances of PSM
+            % subtract abundances of PSM with FDR > 0.01
             elseif nnz(fdr > 0.01) > 0 && length(fdr) > 1
 
                 f_i = cell2mat(ms2(i,14));
