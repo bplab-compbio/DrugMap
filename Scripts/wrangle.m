@@ -300,7 +300,7 @@ save(in+"DrugMat\CDM.v.1.3.mat","X","-v7.3")
 % load .mat which contains CCLE metadata
 M=load(in+"CCLE.metadata.mat");M=M.X;
 
-% list out field names (it's cringe, I know)
+% list out field names
 fld = {'DepMap_ID','cell_line_name','stripped_cell_line_name','CCLE_Name','alias','COSMICID','sex','source','RRID','WTSI_Master_Cell_ID','sample_collection_site','primary_or_metastasis','primary_disease','Subtype','age','Sanger_Model_ID','depmap_public_comments','lineage','lineage_subtype','lineage_sub_subtype','lineage_molecular_subtype','default_growth_pattern','model_manipulation','model_manipulation_details','patient_id','parent_depmap_id','Cellosaurus_NCIt_disease','Cellosaurus_NCIt_id','Cellosaurus_issues'};
 
 % this is where we add metadata
