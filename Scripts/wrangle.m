@@ -862,11 +862,11 @@ end
 X.dat.missense = false(height(X.dat.gene_cys),sl(X.dat.qnt));
 for i = 1:height(X.dat.missense), for j = 1:sl(X.dat.missense), if X.dat.mutated(i,j), if ~strcmp(X.dat.old(i,j),X.dat.new(i,j)), X.dat.missense(i,j) = 1; end;end;end; disp(i/length(X.dat.gene_cys)); end
 
-save(in + "DrugMat\mutations.CDM.v.1.4.mat","X","-v7.3")
+save(mutations.CDM.v.1.4.mat","X","-v7.3")
 %% integrate cysteines with structural data
 
 S = load(in+"structural.db.mat"); S = S.X;
-load(in+"DrugMat\CDM.v.1.6.mat")
+load("CDM.v.1.6.mat")
 
 % find rows with only one protein (isoforms allowed)
 kp = [];
