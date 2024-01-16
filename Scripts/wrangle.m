@@ -141,7 +141,7 @@ idx = find(ismissing(X.id));
 X.id(idx) = [];
 X.a(idx,:) = [];
 
-save(CDM.v.1.1.mat,"X","-v7.3")
+save("CDM.v.1.1.mat","X","-v7.3")
 
 %% now wrangle the abundances and remove bad peptides
 
@@ -192,7 +192,7 @@ sp = split(X.pep.id,'&');
 idx = ~contains(sp(:,2),"C");
 fld = fieldnames(X.pep); for i = 1:length(fld), X.pep.(fld{i})(idx,:,:) = []; end
 
-save(CDM.v.1.2.mat,"X","-v7.3")
+save("CDM.v.1.2.mat","X","-v7.3")
 
 %% annotate peptides with metadata 
 % ... like gene names, protein names, oxidation state, oncogenic variants
@@ -292,7 +292,7 @@ for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i)) + ";"; end
 % add a field which tells you how many TMT runs a peptide was detected in
 X.pep.det = sum(~isnan(X.pep.a(:,:,4)),2);
 
-save(CDM.v.1.3.mat,"X","-v7.3")
+save("CDM.v.1.3.mat","X","-v7.3")
 
 %% where possible, add DepMap annotations 
 % and corresponding metadata for cell lines
@@ -345,7 +345,7 @@ X.line.lineage(strcmp(X.line.name,"MGG123")) = "brain";
 X.line.name = X.line.name';
 X.line.batch = X.line.batch';
 
-save(CDM.v.1.4.mat,"X","-v7.3")
+save("CDM.v.1.4.mat","X","-v7.3")
 
 %% calculate engagement
 
@@ -417,7 +417,7 @@ X.pep.det = sum(~isnan(X.pep.a(:,:,4)),2);
 X.pep.seqlen = cellfun(@length,X.pep.peptide);
 
 % et voila!
-save(CDM.v.1.5.mat,"X","-v7.3")
+save("CDM.v.1.5.mat","X","-v7.3")
 
 %% add domain, class, pathway information
 load(in + "cysteine.ontology.mat")
@@ -441,7 +441,7 @@ for i = 1:height(X.pep.a)
     disp(i/height(X.pep.a))
 end
 
-save(CDM.v.1.6.mat,"X","-v7.3")
+save("CDM.v.1.6.mat","X","-v7.3")
 
 %% further normalize engagement
 
