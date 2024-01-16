@@ -10,57 +10,57 @@ subdir = string({fullfile.name})'; subdir(1:2) = [];
 for xx = 1:length(subdir)
     
     % only do this if we haven't made a .mat already    
-     if ~isfile(in + "DrugMap\" + subdir(xx) + "\" + subdir(xx) + ")
+    if ~isfile(in + "Data\" + subdir(xx) + "\" + subdir(xx) + ".mat")
         tic
         clear X
-
+        
         % load data
         tt = readcell(in + dirr + "\" + subdir(xx) + "\" + subdir(xx) + ".txt");
         ms2 = readcell(in + dirr + "\" + subdir(xx) + "\" + subdir(xx) + ".MS2.txt");       
-
+        
         % delete empty rows        
         del = [];
         for i = 2:height(tt), if ~isnumeric(cell2mat(tt(i,end-15:end))), del = [del;i]; end; end
         tt(del,:) = [];
-
+        
         del = [];
         for i = 2:height(ms2), if ~isnumeric(cell2mat(ms2(i,end-15:end))), del = [del;i]; end; end
         ms2(del,:) = [];        
-
+        
         % filter FDR
         i1 = join(string(ms2(:,[3,4,6]))," ");
         i2 = join(string(tt(:,[2,4,6]))," ");
-
+        
         for i = 2:length(i1) % skip i = 1 because this is the header
             r = find(strcmp(i1,i1(i)));            
             fdr = cell2mat(ms2(r,14));
-
+        
             % delete peptide groups with only 1 PSM which fails FDR threshold
             if nnz(fdr > 0.01) == 1 && length(fdr) == 1
                 s = find(strcmp(i2,i1(i)));
-
+        
                 if ~isempty(s)
                     tt(s,:) = [];
                     i2(s) = [];
                 end
-
+        
             % subtract abundances of PSM with FDR > 0.01
             elseif nnz(fdr > 0.01) > 0 && length(fdr) > 1
-
+        
                 f_i = cell2mat(ms2(i,14));
-
+        
                 if f_i > 0.01                
                     s = find(strcmp(i2,i1(i)));                                     
-    
+        
                     if ~isempty(s)
                         tt(s,end-15:end) = num2cell(cell2mat(tt(s,end-15:end)) - cell2mat(ms2(i,end - 15:end)));
                     end
                 end
-
+        
             end
         
         end                
-       
+        
         % join relevant data
         tt = tt(:,[2,3,4,5,6,15:size(tt,2)]);
         
@@ -82,25 +82,25 @@ for xx = 1:length(subdir)
             end
                    
         end
-    
+        
         % create array of peptide abundances
         X.a = cell2mat(tt(2:end,6:end));
-
+        
         % label batch
         X.batch = repmat(subdir(xx),[1,size(X.a,2)]);
-
+        
         % get unambiguous identifier for a particular peptide
         X.id = X.Proteins + "&" + X.Sequence + "&" + X.ModSeq + "&" + X.Modifications + "&" + X.Charge;
-
+        
         % save
-        save(in + "DrugMap\" + subdir(xx) + "\" + subdir(xx) + ".mat",'X')
+        save(in + "Data\" + subdir(xx) + "\" + subdir(xx) + ".mat",'X')
         toc
         disp(xx)        
-     end
+    end
 end
 
 % loop to merge
-dirr = "DrugMap";
+dirr = "Data";
 fullfile = dir(in + dirr + "\");
 subdir = string({fullfile.name})'; subdir(1:2) = []; 
 
@@ -158,7 +158,7 @@ t(1,:) = [];
 u = unique(t(:,1));
 str = regexprep(str,'.txt','');
 for i = 1:length(u)
-    i1 = find(strcmp(str,u(i)));
+    i1 = strcmp(str,u(i));
     i2 = find(strcmp(t(:,1),u(i)));
     str2(i1) = t(i2,2);
 end
@@ -172,7 +172,7 @@ X.pep.id = X.id; X = rmfield(X,'id');
 X.line.trt = repmat(["KB05","KB03","KB02","DMSO"],[1,sl(X.pep.a)/4]);
 
 % remove empty TMT channels
-idx = find(strcmp(X.line.name,["empty"]));
+idx = find(strcmp(X.line.name,"empty"));
 X.pep.a(:,idx) = []; 
 fld = fieldnames(X.line);for i =1 :length(fld), X.line.(fld{i})(idx) = []; end
 X.line.batch = strrep(X.line.batch,'.txt'," ");
@@ -652,7 +652,7 @@ for jj = 1:3
 end
 
 
-X.pep = rmfield(X.pep,["eq"]);
+X.pep = rmfield(X.pep,"eq");
 fld = string(fieldnames(X.pep));
 for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(idcs,:,:); end
 X.pep.e = q2;
@@ -907,4 +907,3 @@ end
 
 
 X = S; save("structural.db.v.2.mat",'X')
-
