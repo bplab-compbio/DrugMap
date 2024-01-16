@@ -10,7 +10,7 @@ subdir = string({fullfile.name})'; subdir(1:2) = [];
 for xx = 1:length(subdir)
     
     % only do this if we haven't made a .mat already    
-     if ~isfile(in + "DrugMap\" + subdir(xx) + "\" + subdir(xx) + ".mat")
+     if ~isfile(in + "DrugMap\" + subdir(xx) + "\" + subdir(xx) + ")
         tic
         clear X
 
@@ -141,7 +141,7 @@ idx = find(ismissing(X.id));
 X.id(idx) = [];
 X.a(idx,:) = [];
 
-save(CDM.v.1.1.mat","X","-v7.3")
+save(CDM.v.1.1.mat,"X","-v7.3")
 
 %% now wrangle the abundances and remove bad peptides
 
@@ -192,11 +192,11 @@ sp = split(X.pep.id,'&');
 idx = ~contains(sp(:,2),"C");
 fld = fieldnames(X.pep); for i = 1:length(fld), X.pep.(fld{i})(idx,:,:) = []; end
 
-save(CDM.v.1.2.mat","X","-v7.3")
+save(CDM.v.1.2.mat,"X","-v7.3")
 
 %% annotate peptides with metadata 
 % ... like gene names, protein names, oxidation state, oncogenic variants
-P = load(in+"fasta.mat");P=P.X;
+P = load("fasta.mat");P=P.X;
 sp = split(X.pep.id,"&");
 X.pep.peptide = sp(:,2);
 X.pep.annotated = sp(:,3);
@@ -292,13 +292,13 @@ for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i)) + ";"; end
 % add a field which tells you how many TMT runs a peptide was detected in
 X.pep.det = sum(~isnan(X.pep.a(:,:,4)),2);
 
-save(CDM.v.1.3.mat","X","-v7.3")
+save(CDM.v.1.3.mat,"X","-v7.3")
 
 %% where possible, add DepMap annotations 
 % and corresponding metadata for cell lines
 
 % load .mat which contains CCLE metadata
-M=load(in+"CCLE.metadata.mat");M=M.X;
+M=load("CCLE.metadata.mat");M=M.X;
 
 % list out field names
 fld = {'DepMap_ID','cell_line_name','stripped_cell_line_name','CCLE_Name','alias','COSMICID','sex','source','RRID','WTSI_Master_Cell_ID','sample_collection_site','primary_or_metastasis','primary_disease','Subtype','age','Sanger_Model_ID','depmap_public_comments','lineage','lineage_subtype','lineage_sub_subtype','lineage_molecular_subtype','default_growth_pattern','model_manipulation','model_manipulation_details','patient_id','parent_depmap_id','Cellosaurus_NCIt_disease','Cellosaurus_NCIt_id','Cellosaurus_issues'};
@@ -345,7 +345,7 @@ X.line.lineage(strcmp(X.line.name,"MGG123")) = "brain";
 X.line.name = X.line.name';
 X.line.batch = X.line.batch';
 
-save(CDM.v.1.4.mat","X","-v7.3")
+save(CDM.v.1.4.mat,"X","-v7.3")
 
 %% calculate engagement
 
@@ -417,7 +417,7 @@ X.pep.det = sum(~isnan(X.pep.a(:,:,4)),2);
 X.pep.seqlen = cellfun(@length,X.pep.peptide);
 
 % et voila!
-save(CDM.v.1.5.mat","X","-v7.3")
+save(CDM.v.1.5.mat,"X","-v7.3")
 
 %% add domain, class, pathway information
 load(in + "cysteine.ontology.mat")
@@ -441,7 +441,7 @@ for i = 1:height(X.pep.a)
     disp(i/height(X.pep.a))
 end
 
-save(CDM.v.1.6.mat","X","-v7.3")
+save(CDM.v.1.6.mat,"X","-v7.3")
 
 %% further normalize engagement
 
@@ -658,10 +658,10 @@ for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(idcs,:,:); end
 X.pep.e = q2;
 X.pep.std = s2;
 X.pep.detections = d2;
-save("CDM.v.1.7.mat","-v7.3")
+save("CDM.v.1.7.mat","X","-v7.3")
 
 %% integrate CDM with mutations
-M = load(in+"CCLE.mutations.mat"); M = M.X;
+M = load("CCLE.mutations.mat"); M = M.X;
 [u,col] = unique(X.line.name);
 bch = X.line.batch(col);
 bch = split(bch,'_'); bch = bch(:,1)'; ubch = unique(bch);
@@ -735,7 +735,7 @@ A.dat.accession_cys = X.pep.acc_cys;
 A.line.batch = bch;
 A.line.DepMap_ID = ach_id;
 A.line.stripped_cell_line_name = u';
-X = A;save(mutations.x.CDM.v.1.1.mat",'X')
+X = A;save("mutations.x.CDM.v.1.1.mat",'X')
 
 
 X.dat.new = repmat("",[height(X.dat.mutated),sl(X.dat.mutated)]);
@@ -775,7 +775,7 @@ for i = 1:length(u)
     end   
 end
 
-save(mutations.CDM.v.1.2.mat",'X','-v7.3')
+save("mutations.CDM.v.1.2.mat",'X','-v7.3')
 
 pos = str2double(M.Pos);
 mp = M.UniprotID + " " + M.ProteinChange;
@@ -802,7 +802,7 @@ for i = 1:length(ac)
     end
 end
 
-save(mutations.CDM.v.1.3.mat",'X','-v7.3')
+save("mutations.CDM.v.1.3.mat",'X','-v7.3')
 
 G = load(in+"genomic.coordinates.mat");G = G.X;
 
@@ -862,10 +862,10 @@ end
 X.dat.missense = false(height(X.dat.gene_cys),sl(X.dat.qnt));
 for i = 1:height(X.dat.missense), for j = 1:sl(X.dat.missense), if X.dat.mutated(i,j), if ~strcmp(X.dat.old(i,j),X.dat.new(i,j)), X.dat.missense(i,j) = 1; end;end;end; disp(i/length(X.dat.gene_cys)); end
 
-save(mutations.CDM.v.1.4.mat","X","-v7.3")
+save("mutations.CDM.v.1.4.mat","X","-v7.3")
 %% integrate cysteines with structural data
 
-S = load(in+"structural.db.mat"); S = S.X;
+S = load("structural.db.mat"); S = S.X;
 load("CDM.v.1.6.mat")
 
 % find rows with only one protein (isoforms allowed)
@@ -906,5 +906,5 @@ for i = 1:length(S.pdb)
 end
 
 
-X = S; save(structural.db.v.2.mat",'X')
+X = S; save("structural.db.v.2.mat",'X')
 
