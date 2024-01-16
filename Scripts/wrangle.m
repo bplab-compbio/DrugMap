@@ -662,13 +662,16 @@ save("CDM.v.1.7.mat","X","-v7.3")
 
 %% integrate CDM with mutations
 M = load("CCLE.mutations.mat"); M = M.X;
+
+% get unique information for each cell line (cell line name, project Achilles ID, batch)
 [u,col] = unique(X.line.name);
 bch = X.line.batch(col);
 bch = split(bch,'_'); bch = bch(:,1)'; ubch = unique(bch);
 ach_id = X.line.DepMap_ID(col);
 lin = X.line.lineage(col);
-
 mutlines = unique(M.ModelID);
+
+% subset DrugMap on cell lines which have recorded mutations in CCLE
 [~,i1,i2] = intersect(mutlines,ach_id);
 qnt2 = qnt(:,i2,:); 
 bch = bch(i2); ach_id = ach_id(i2); u = u(i2);
@@ -868,7 +871,7 @@ save("mutations.CDM.v.1.4.mat","X","-v7.3")
 S = load("structural.db.mat"); S = S.X;
 load("CDM.v.1.6.mat")
 
-% find rows with only one protein (isoforms allowed)
+% find peptides with only one protein assignment (isoforms allowed)
 kp = [];
 for i = 1:length(X.pep.accession)
     sp = split(X.pep.accession(i),';');
@@ -880,6 +883,7 @@ for i = 1:length(X.pep.accession)
     if length(sp) == 1, kp = [kp;i]; end
 end
 
+% subset our data table on these peptides
 fld = string(fieldnames(X.pep));
 for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(kp,:,:); end
 qnt2 = qnt(kp,:,:);
