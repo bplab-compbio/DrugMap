@@ -100,8 +100,8 @@ dirr = "Data";
 fullfile = dir(dirr + "\");
 subdir = string({fullfile.name})'; subdir(1:2) = []; 
 
-load(in+dirr + "\" + subdir(1) + "\" + subdir(1) + ".mat");
-L = load(in+dirr + "\" + subdir(2) + "\" + subdir(2) + ".mat"); L = L.X;
+load(dirr + "\" + subdir(1) + "\" + subdir(1) + ".mat");
+L = load(dirr + "\" + subdir(2) + "\" + subdir(2) + ".mat"); L = L.X;
 X.tid = union(X.id,L.id);
 X.("a2") = nan(height(X.tid),size(X.a,2) + size(L.a,2)); 
 
@@ -116,7 +116,7 @@ X.a = X.a2; X = rmfield(X,["a2","tid","Sequence","Proteins","ModSeq","Modificati
 
 % now loop and collect all TMTs into one array
 for x = 3:length(subdir)    
-    L = load(in+dirr + "\" + subdir(x) + "\" + subdir(x) + ".mat"); L = L.X;
+    L = load(dirr + "\" + subdir(x) + "\" + subdir(x) + ".mat"); L = L.X;
     X.tid = union(X.id,L.id);
     X.("a2") = nan(height(X.tid),size(X.a,2) + size(L.a,2)); 
     
@@ -147,7 +147,7 @@ str = strrep(X.batch,'.mat','');
 str2 = str;
 
 % load metadata
-t = string(readcell(in+"DrugMap.metadata.xlsx"));
+t = string(readcell("DrugMap.metadata.xlsx"));
 
 % organize columns of final table by name of cell line, collect metadata
 t(1,:) = [];
@@ -574,7 +574,7 @@ for i = 1:length(mod)
 
     pos = eraseBetween(strrep(join(";M"+ pos)," ",""),1,1);
 
-    strs(find(idcs == i3(i))) = pos;
+    strs(idcs == i3(i)) = pos;
 end
 
 % assemble final tables
@@ -805,7 +805,7 @@ end
 
 save("mutations.CDM.v.1.3.mat",'X','-v7.3')
 
-G = load(in+"genomic.coordinates.mat");G = G.X;
+G = load("genomic.coordinates.mat");G = G.X;
 
 X.dat.chromosome_name = nan(length(X.dat.gene),1);
 for i = 1:height(X.dat.gene)
