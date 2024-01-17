@@ -439,7 +439,7 @@ end
 
 save("CDM.v.1.6.mat","X","-v7.3")
 
-%% further normalize engagement
+%% normalize engagement
 
 % quantile normalize
 for i = 1:3, X.pep.eq(:,:,i) = quantilenorm(X.pep.e(:,:,i)); end
@@ -657,9 +657,9 @@ X.pep.detections = d2;
 save("CDM.v.1.7.mat","X","-v7.3")
 
 %% integrate CDM with mutations
-% to run this code block, first generate the array which is the output of the block entitled, "further normalize engagement"
+% to run this code block, first generate the array which is the output of the block entitled "normalize engagement"
 
-M = load("CCLE.mutations.mat"); M = M.X;
+load("CCLE.mutations.mat");
 
 % get unique information for each cell line (cell line name, project Achilles ID, batch)
 [u,col] = unique(X.line.name);
