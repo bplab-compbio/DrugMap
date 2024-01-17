@@ -643,7 +643,7 @@ for jj = 1:3
     t.Properties.VariableNames = fl;
     
     tb = [f,t];
-    writetable(tb,out+sct(jj) + ".v.3.xlsx")
+    writetable(tb,sct(jj) + ".v.3.xlsx")
     disp(jj)
 end
 
