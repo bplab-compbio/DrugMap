@@ -1,22 +1,18 @@
-% get directories; these are just strings which shorten file paths and enable navigation of file structure
-[in,out] = ld;
-
-
 % pre-wrangle files so that we don't have to repeat in future
 dirr = "DrugMap";
-fullfile = dir(in + dirr + "\");
+fullfile = dir(dirr + "\");
 subdir = string({fullfile.name})'; subdir(1:2) = [];
 
 for xx = 1:length(subdir)
     
     % only do this if we haven't made a .mat already    
-    if ~isfile(in + "Data\" + subdir(xx) + "\" + subdir(xx) + ".mat")
+    if ~isfile("Data\" + subdir(xx) + "\" + subdir(xx) + ".mat")
         tic
         clear X
         
         % load data
-        tt = readcell(in + dirr + "\" + subdir(xx) + "\" + subdir(xx) + ".txt");
-        ms2 = readcell(in + dirr + "\" + subdir(xx) + "\" + subdir(xx) + ".MS2.txt");       
+        tt = readcell(dirr + "\" + subdir(xx) + "\" + subdir(xx) + ".txt");
+        ms2 = readcell(dirr + "\" + subdir(xx) + "\" + subdir(xx) + ".MS2.txt");       
         
         % delete empty rows        
         del = [];
@@ -93,7 +89,7 @@ for xx = 1:length(subdir)
         X.id = X.Proteins + "&" + X.Sequence + "&" + X.ModSeq + "&" + X.Modifications + "&" + X.Charge;
         
         % save
-        save(in + "Data\" + subdir(xx) + "\" + subdir(xx) + ".mat",'X')
+        save("Data\" + subdir(xx) + "\" + subdir(xx) + ".mat",'X')
         toc
         disp(xx)        
     end
@@ -101,7 +97,7 @@ end
 
 % loop to merge
 dirr = "Data";
-fullfile = dir(in + dirr + "\");
+fullfile = dir(dirr + "\");
 subdir = string({fullfile.name})'; subdir(1:2) = []; 
 
 load(in+dirr + "\" + subdir(1) + "\" + subdir(1) + ".mat");
@@ -169,7 +165,7 @@ X.line.batch = X.batch;
 X = rmfield(X,'batch');
 X.pep.a = X.a; X =rmfield(X,'a');
 X.pep.id = X.id; X = rmfield(X,'id');
-X.line.trt = repmat(["KB05","KB03","KB02","DMSO"],[1,sl(X.pep.a)/4]);
+X.line.trt = repmat(["KB05","KB03","KB02","DMSO"],[1,size(X.pep.a,2)/4]);
 
 % remove empty TMT channels
 idx = find(strcmp(X.line.name,"empty"));
@@ -179,7 +175,7 @@ X.line.batch = strrep(X.line.batch,'.txt'," ");
 
 % 2D array into 3D
 u = ["KB05","KB03","KB02","DMSO"];
-X.pep.a2 = nan(height(X.pep.a),sl(X.pep.a)/4,4);
+X.pep.a2 = nan(height(X.pep.a),size(X.pep.a,2)/4,4);
 for i = 1:length(u), X.pep.a2(:,:,i) = X.pep.a(:,strcmp(X.line.trt,u(i))); end
 X.pep.a = X.pep.a2; X.pep = rmfield(X.pep,"a2");
 
@@ -388,8 +384,8 @@ for i = 1:length(fld), X.pep.(fld(i))(del,:,:) = []; end
 % e.g., median the abundances of different oxoforms of same peptide
 
 [u,row] = unique(X.pep.peptide);
-X.pep.a2 = nan(length(u),sl(X.pep.a),4);
-X.pep.e2 = nan(length(u),sl(X.pep.a),3);
+X.pep.a2 = nan(length(u),size(X.pep.a, 2),4);
+X.pep.e2 = nan(length(u),size(X.pep.a, 2),3);
 
 % for each peptide
 for i = 1:length(u)
@@ -420,7 +416,7 @@ X.pep.seqlen = cellfun(@length,X.pep.peptide);
 save("CDM.v.1.5.mat","X","-v7.3")
 
 %% add domain, class, pathway information
-load(in + "cysteine.ontology.mat")
+load("cysteine.ontology.mat")
 
 [X.pep.domain, X.pep.class, X.pep.pathway] = deal(cell(height(X.pep.a),1));
 
@@ -510,7 +506,7 @@ for i = 1:length(u), st(:,i,:) = std(X.pep.eq(:,strcmp(X.line.name,u(i)),:),0,2,
 for i = 1:length(u), nd(:,i,:) = sum(~isnan(X.pep.eq(:,strcmp(X.line.name,u(i)),:)),2); end
 
 % delete cysteines with unconfident detection (i.e. detected in less than 2 runs at the spectrometer)
-del = find(sum(isnan(qnt(:,:,2)),2) == sl(qnt));
+del = find(sum(isnan(qnt(:,:,2)),2) == size(qnt,2));
 [~,i1] = unique(X.pep.acc_cys);
 i1 = setdiff(i1,del);
 
@@ -583,17 +579,17 @@ end
 
 % assemble final tables
 
-q2 = nan(length(idcs),sl(qnt),3);
+q2 = nan(length(idcs),size(qnt,2),3);
 for i = 1:length(idcs)
     q2(i,:,:) = median(qnt(strcmp(X.pep.acc_cys,X.pep.acc_cys(idcs(i))),:,:),1,"omitnan");
 end
 
-s2 = nan(length(idcs),sl(st),3);
+s2 = nan(length(idcs),size(st,2),3);
 for i = 1:length(idcs)
     s2(i,:,:) = median(st(strcmp(X.pep.acc_cys,X.pep.acc_cys(idcs(i))),:,:),1,"omitnan");
 end
 
-d2 = nan(length(idcs),sl(nd),3);
+d2 = nan(length(idcs),size(nd,2),3);
 for i = 1:length(idcs)
     d2(i,:,:) = round(median(nd(strcmp(X.pep.acc_cys,X.pep.acc_cys(idcs(i))),:,:),1,"omitnan"));
 end
@@ -605,7 +601,7 @@ d = [eraseBetween(X.pep.accession(idcs),1,1), ...
     eraseBetween(X.pep.cys(idcs),1,1), ...
     strs];
 
-for i = 1:height(d), for j = 1:sl(d), s = split(d(i,j),";"); if length(s) > 1, d(i,j) = strjoin(s(1:end - 1),";"); end; end; end
+for i = 1:height(d), for j = 1:size(d,2), s = split(d(i,j),";"); if length(s) > 1, d(i,j) = strjoin(s(1:end - 1),";"); end; end; end
 
 f = splitvars(table(d));
 f.Properties.VariableNames = ["Accession","Gene","Protein","Peptide","Cysteine","Methionine Oxidation"];
@@ -637,11 +633,11 @@ f.Protein = p2;
 sct = ["KB05","KB03","KB02"];
 for jj = 1:3
     ft = [];
-    for i = 1:sl(q2), ft = [ft,[q2(:,i,jj),s2(:,i,jj),d2(:,i,jj)]]; end
+    for i = 1:size(q2,2), ft = [ft,[q2(:,i,jj),s2(:,i,jj),d2(:,i,jj)]]; end
     
     ach_id(ismissing(ach_id)) = "N/A";
     fl = [];
-    for i = 1:sl(q2), fl = [fl,[u(i) + " (" + ach_id(i) + ")" + " Median Engagement (%)", u(i) + " (" + ach_id(i) + ")" + " Standard Deviation", u(i) + " (" + ach_id(i) + ")" + " # of Replicates"]]; end
+    for i = 1:size(q2,2), fl = [fl,[u(i) + " (" + ach_id(i) + ")" + " Median Engagement (%)", u(i) + " (" + ach_id(i) + ")" + " Standard Deviation", u(i) + " (" + ach_id(i) + ")" + " # of Replicates"]]; end
     t = table(ft);
     t = splitvars(t);
     t.Properties.VariableNames = fl;
@@ -741,16 +737,16 @@ A.line.stripped_cell_line_name = u';
 X = A;save("mutations.x.CDM.v.1.1.mat",'X')
 
 
-X.dat.new = repmat("",[height(X.dat.mutated),sl(X.dat.mutated)]);
-X.dat.old = repmat("",[height(X.dat.mutated),sl(X.dat.mutated)]);
-X.dat.mutation = repmat("",[height(X.dat.mutated),sl(X.dat.mutated)]);
+X.dat.new = repmat("",[height(X.dat.mutated),size(X.dat.mutated,2)]);
+X.dat.old = repmat("",[height(X.dat.mutated),size(X.dat.mutated,2)]);
+X.dat.mutation = repmat("",[height(X.dat.mutated),size(X.dat.mutated,2)]);
 
 
 ug = unique(X.dat.accession); ug(1) = [];
 for i = 1:length(ug)
     row = find(strcmp(X.dat.accession,ug(i)));
     row2 = row(1);
-    for j = 1:sl(X.dat.mutation)        
+    for j = 1:size(X.dat.mutation,2)        
         if any(X.dat.mutated(row,j))
             r = find(strcmp(M.UniprotID,X.dat.accession(row2))&strcmp(M.ModelID,X.line.DepMap_ID(j)));
             if ~isempty(r)
@@ -764,7 +760,7 @@ for i = 1:length(ug)
 end
 
 u = unique(X.line.batch);
-X.dat.delta = nan(height(X.dat.qnt),sl(X.dat.qnt),3);
+X.dat.delta = nan(height(X.dat.qnt),size(X.dat.qnt,2),3);
 for i = 1:length(u)
     f = find(strcmp(X.line.batch,u(i)));
 
@@ -785,7 +781,7 @@ mp = M.UniprotID + " " + M.ProteinChange;
 [~,ii] =unique(mp,'stable');
 mp = mp(ii);
 pos2 = pos(ii);
-X.dat.pos = nan(length(X.dat.gene),sl(X.dat.mutated));
+X.dat.pos = nan(length(X.dat.gene),size(X.dat.mutated,2));
 
 ac = unique(X.dat.accession); ac(1) = [];
 for i = 1:length(ac)
@@ -834,8 +830,8 @@ for i = 1:length(X.dat.gene_cys)
     X.dat.gene_cys1(i) = sp;
 end
 
-X.dat.missense = false(height(X.dat.gene_cys),sl(X.dat.qnt));
-for i = 1:height(X.dat.missense), for j = 1:sl(X.dat.missense), if X.dat.mutated(i,j), if ~strcmp(X.dat.old(i,j),X.dat.new(i,j)), X.dat.missense(i,j) = 1; end;end;end; disp(i/length(X.dat.gene_cys)); end
+X.dat.missense = false(height(X.dat.gene_cys),size(X.dat.qnt,2));
+for i = 1:height(X.dat.missense), for j = 1:size(X.dat.missense,2), if X.dat.mutated(i,j), if ~strcmp(X.dat.old(i,j),X.dat.new(i,j)), X.dat.missense(i,j) = 1; end;end;end; disp(i/length(X.dat.gene_cys)); end
 
 X.dat.chromosome_name = nan(length(X.dat.gene),1);
 for i = 1:height(X.dat.gene)
@@ -862,8 +858,8 @@ for i = 1:length(X.dat.gene_cys)
     X.dat.gene_cys1(i) = sp;
 end
 
-X.dat.missense = false(height(X.dat.gene_cys),sl(X.dat.qnt));
-for i = 1:height(X.dat.missense), for j = 1:sl(X.dat.missense), if X.dat.mutated(i,j), if ~strcmp(X.dat.old(i,j),X.dat.new(i,j)), X.dat.missense(i,j) = 1; end;end;end; disp(i/length(X.dat.gene_cys)); end
+X.dat.missense = false(height(X.dat.gene_cys),size(X.dat.qnt,2));
+for i = 1:height(X.dat.missense), for j = 1:size(X.dat.missense,2), if X.dat.mutated(i,j), if ~strcmp(X.dat.old(i,j),X.dat.new(i,j)), X.dat.missense(i,j) = 1; end;end;end; disp(i/length(X.dat.gene_cys)); end
 
 save("mutations.CDM.v.1.4.mat","X","-v7.3")
 %% integrate cysteines with structural data
