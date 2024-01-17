@@ -643,7 +643,7 @@ for jj = 1:3
     t.Properties.VariableNames = fl;
     
     tb = [f,t];
-    writetable(tb,sct(jj) + ".v.3.xlsx")
+    writetable(tb,sct(jj) + ".xlsx")
     disp(jj)
 end
 
@@ -657,6 +657,8 @@ X.pep.detections = d2;
 save("CDM.v.1.7.mat","X","-v7.3")
 
 %% integrate CDM with mutations
+% to run this code block, first generate the array which is the output of the block entitled, "further normalize engagement"
+
 M = load("CCLE.mutations.mat"); M = M.X;
 
 % get unique information for each cell line (cell line name, project Achilles ID, batch)
