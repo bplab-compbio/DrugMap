@@ -50,9 +50,9 @@ for i = 1:3, D.diff.(fld(i)) = []; D.std.(fld(i)) = []; end
 for j = 1:3
 for i = 1:length(ubch)
     dat = qnt(:,strcmp(bch,ubch(i)),j);
-    if sl(dat) > 2       
+    if size(dat,2) > 2       
         D.std.(fld(j)) = [D.std.(fld(j)),std(dat,0,2,'omitnan')];
-        for k = 1:sl(dat)
+        for k = 1:size(dat,2)
             d2 = dat(:,k) - median(dat,2,'omitnan');
             D.diff.(fld(j)) = [D.diff.(fld(j)),d2];
         end
@@ -69,8 +69,8 @@ for i = 1:length(ubch)
     bchs = bch(strcmp(bch,ubch(i)));
     nms = u(strcmp(bch,ubch(i)));
     achh = ach_id(strcmp(bch,ubch(i)));
-    if sl(dat) > 2       
-        for k = 1:sl(dat)
+    if size(dat,2) > 2       
+        for k = 1:size(dat,2)
             lin2 = [lin2;lns(k)];
             bch2 = [bch2;bchs(k)];
             nm2 = [nm2;nms(k)];
@@ -88,7 +88,7 @@ for i = 1:3, D.rank.(fld(i)) = 1 - tiedrank(D.nnz.(fld(i)))/length(find(~isnan(D
 for i = 1:3, D.globalstd.(fld(i)) = std(qnt(:,:,i),0,2,'omitnan'); D.globalstd.(fld(i))(D.globalstd.(fld(i)) == 0) = NaN; end
 for i = 1:3, D.globalrank.(fld(i)) = 1 - tiedrank(D.globalstd.(fld(i)))/length(find(~isnan(D.globalstd.(fld(i))))); end
 
-for i = 1:3, D.det.(fld(i)) = sum(~isnan(qnt(:,:,i)),2)./sl(qnt); end
+for i = 1:3, D.det.(fld(i)) = sum(~isnan(qnt(:,:,i)),2)./size(qnt,2); end
 
 m = median(qnt(:,:,2),2,'omitnan');
 row = D.rank.KB03 < 0.05 & D.globalrank.KB03 < 0.05 & D.det.KB03 >= 0.5;
