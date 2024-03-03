@@ -1,41 +1,58 @@
 % pre-wrangle files so that we don't have to repeat in future
+
+% get base of directory
 dirr = "DrugMap";
+
+% get list of files
 fullfile = dir(dirr + "\");
+
+% get folder names
 subdir = string({fullfile.name})'; subdir(1:2) = [];
 
+% for each folder
 for xx = 1:length(subdir)
     
     % only do this if we haven't made a .mat already    
     if ~isfile("Data\" + subdir(xx) + "\" + subdir(xx) + ".mat")
+
+        % just to check time
         tic
+
+        % clear last struct
         clear X
         
         % load data
         tt = readcell(dirr + "\" + subdir(xx) + "\" + subdir(xx) + ".txt");
         ms2 = readcell(dirr + "\" + subdir(xx) + "\" + subdir(xx) + ".MS2.txt");       
         
-        % delete empty rows        
-        del = [];
-        for i = 2:height(tt), if ~isnumeric(cell2mat(tt(i,end-15:end))), del = [del;i]; end; end
+        % delete empty rows for MS3 data 
+        del = []; for i = 2:height(tt), if ~isnumeric(cell2mat(tt(i,end-15:end))), del = [del;i]; end; end
         tt(del,:) = [];
         
-        del = [];
-        for i = 2:height(ms2), if ~isnumeric(cell2mat(ms2(i,end-15:end))), del = [del;i]; end; end
+        % delete empty rows for MS2 data
+        del = []; for i = 2:height(ms2), if ~isnumeric(cell2mat(ms2(i,end-15:end))), del = [del;i]; end; end
         ms2(del,:) = [];        
         
-        % filter FDR
+        % get FDR
         i1 = join(string(ms2(:,[3,4,6]))," ");
         i2 = join(string(tt(:,[2,4,6]))," ");
         
         for i = 2:length(i1) % skip i = 1 because this is the header
+
+            % find peptide
             r = find(strcmp(i1,i1(i)));            
+
+            % get FDR
             fdr = cell2mat(ms2(r,14));
         
             % delete peptide groups with only 1 PSM which fails FDR threshold
             if nnz(fdr > 0.01) == 1 && length(fdr) == 1
                 s = find(strcmp(i2,i1(i)));
         
+                % if present in the MS3 sheet
                 if ~isempty(s)
+
+                    % delete from both
                     tt(s,:) = [];
                     i2(s) = [];
                 end
@@ -43,12 +60,17 @@ for xx = 1:length(subdir)
             % subtract abundances of PSM with FDR > 0.01
             elseif nnz(fdr > 0.01) > 0 && length(fdr) > 1
         
+                % get FDR
                 f_i = cell2mat(ms2(i,14));
         
-                if f_i > 0.01                
+                if f_i > 0.01     
+
+                    % find peptide with bad PSM in MS3 sheet
                     s = find(strcmp(i2,i1(i)));                                     
         
                     if ~isempty(s)
+                        
+                        % subtract
                         tt(s,end-15:end) = num2cell(cell2mat(tt(s,end-15:end)) - cell2mat(ms2(i,end - 15:end)));
                     end
                 end
@@ -63,18 +85,25 @@ for xx = 1:length(subdir)
         % create initial data struct
         fld = string(tt(1,1:5));
         for i = 1:length(fld), X.(fld(i)) = string(tt(2:end,i));end
+
+        % fill missing
         X.Modifications(ismissing(X.Modifications)) = "N/A";
         
         % rename variants
-        idx1 = find(contains(X.Proteins,"Variant"));
-        lines = [];
-        for i = 1:length(idx1)
-            sp = split(X.Proteins(idx1(i)),';'); sp(cellfun('isempty',sp)) = [];
+        v = find(contains(X.Proteins,"Variant"));
+        
+        % for each variant
+        for i = 1:length(v)
+
+            % parse the text
+            sp = split(X.Proteins(v(i)),';'); sp(cellfun('isempty',sp)) = [];
             if length(sp) == 1, continue; 
             else
+
+                % rename the variant
                 del = contains(sp,"Variant");
                 sp(del) = [];
-                X.Proteins(idx1(i)) = join(sp,";") + ";";
+                X.Proteins(v(i)) = join(sp,";") + ";";
             end
                    
         end
@@ -91,58 +120,102 @@ for xx = 1:length(subdir)
         % save
         save("Data\" + subdir(xx) + "\" + subdir(xx) + ".mat",'X')
         toc
+
+        % display folder #
         disp(xx)        
     end
 end
 
-% loop to merge
+% now loop to merge the .mat we just created
+
+% get base of directory
 dirr = "Data";
+
+% get list of files
 fullfile = dir(dirr + "\");
+
+% get list of folders
 subdir = string({fullfile.name})'; subdir(1:2) = []; 
 
+% load first TMT
 load(dirr + "\" + subdir(1) + "\" + subdir(1) + ".mat");
+
+% load second TMT into struct L
 L = load(dirr + "\" + subdir(2) + "\" + subdir(2) + ".mat"); L = L.X;
+
+% merge peptide id
 X.tid = union(X.id,L.id);
+
+% initialize new array for abundances
 X.("a2") = nan(height(X.tid),size(X.a,2) + size(L.a,2)); 
 
+% backfill data from first TMT
 [~,i1,i2] = intersect(X.tid, X.id);
 X.a2(i1,1:size(X.a,2)) = X.a(i2,:);
 
+% backfill data from new TMT
 [~,i1,i2] = intersect(X.tid, L.id);
 X.a2(i1,size(X.a,2)+ 1:size(X.a2,2)) = L.a(i2,:);
+
+% add batch information
 X.batch = [X.batch,L.batch];
+
+% replace old peptide id field with the concatenated version
 X.id = X.tid; 
 X.a = X.a2; X = rmfield(X,["a2","tid","Sequence","Proteins","ModSeq","Modifications","Charge"]);
 
 % now loop and collect all TMTs into one array
 for x = 3:length(subdir)    
+
+    % load the xth TMT
     L = load(dirr + "\" + subdir(x) + "\" + subdir(x) + ".mat"); L = L.X;
+
+    % union peptide id
     X.tid = union(X.id,L.id);
+
+    % make new abundance array with space for new TMT
     X.("a2") = nan(height(X.tid),size(X.a,2) + size(L.a,2)); 
     
+    % backfill new abundance array with original 
     [~,i1,i2] = intersect(X.tid, X.id);
     X.a2(i1,1:size(X.a,2)) = X.a(i2,:);
     
+    % backfill new abundance array with new TMT
     [~,i1,i2] = intersect(X.tid, L.id);
     X.a2(i1,size(X.a,2)+ 1:size(X.a2,2)) = L.a(i2,:);
+
+    % append batch info
     X.batch = [X.batch,L.batch];
+
+    % update peptide ids
     X.id = X.tid; 
+
+    % replace old arrays with updated arrays
     X.a = X.a2; X = rmfield(X,["a2","tid"]);    
     
-    disp(height(X.a));disp(x)
+    % display the height of the abundance array for fun
+    disp(height(X.a));
+    
+    % display TMT number
+    disp(x)
 end
 
-% delete rows with missing id
+% find rows with missing id
 idx = find(ismissing(X.id));
+
+% delete
 X.id(idx) = [];
 X.a(idx,:) = [];
 
+% save
 save("CDM.v.1.1.mat","X","-v7.3")
 
 %% now wrangle the abundances and remove bad peptides
 
 % replace 0 abundance with NaN
 X.a(X.a == 0) = NaN;
+
+
 str = strrep(X.batch,'.mat','');
 str2 = str;
 
@@ -341,6 +414,7 @@ X.line.lineage(strcmp(X.line.name,"MGG123")) = "brain";
 X.line.name = X.line.name';
 X.line.batch = X.line.batch';
 
+% save
 save("CDM.v.1.4.mat","X","-v7.3")
 
 %% calculate engagement
@@ -373,17 +447,21 @@ end
 kp = [];
 for i = 1:length(del), if X.pep.det(del(i)) >= 50, kp = [kp;i]; end; end
 
-% now delete rarely detected, oxidized peptides
+% find rarely detected, oxidized peptides
 % we assume that (most) methionine oxidations represent technical artifact
 del = setdiff(del,del(kp));
 
+% delete
 fld = string(fieldnames(X.pep));
 for i = 1:length(fld), X.pep.(fld(i))(del,:,:) = []; end
 
-% we now calculate a unique peptide abundance for all peptides
+% calculate a unique peptide abundance for all peptides
 % e.g., median the abundances of different oxoforms of same peptide
 
+% get unique peptides
 [u,row] = unique(X.pep.peptide);
+
+% initialize empty arrays
 X.pep.a2 = nan(length(u),size(X.pep.a, 2),4);
 X.pep.e2 = nan(length(u),size(X.pep.a, 2),3);
 
@@ -872,40 +950,77 @@ load("CDM.v.1.6.mat")
 % find peptides with only one protein assignment (isoforms allowed)
 kp = [];
 for i = 1:length(X.pep.accession)
+
+    % split peptide into all possible UNP accession attributions
     sp = split(X.pep.accession(i),';');
+
+    % delete empty entries
     sp = sp(~cellfun(@isempty,sp)); 
+
+    % for each accession
     for j = 1:length(sp)
+
+        % if it has a "-" character, delete it for now
         if contains(sp(j),'-'), sp(j) = regexp(sp(j),'.+(?=[-])','match'); end
     end
+
+    % get unique accessions
     sp = unique(sp(~contains(sp,'-')));
+
+    % if we only have one unique accession
     if length(sp) == 1, kp = [kp;i]; end
 end
 
-% subset our data table on these peptides
+% get field names
 fld = string(fieldnames(X.pep));
-for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(kp,:,:); end
-qnt2 = qnt(kp,:,:);
 
-% eliminate noisy ligandability estimates which may driven by biology of 
-% individual cell lines --> remove peptides w/ low detection
+% subset our struct on these peptides
+for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(kp,:,:); end
+
+q = qnt(kp,:,:);
+
+% get field names
+fld = string(fieldnames(X.pep));
+
+% find noisy ligandability estimates--maybe driven by biology of individual cell lines
 kp = find(X.pep.det >= 71);
-fld = string(fieldnames(X.pep));
-for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(kp,:,:); end
-qnt2 = qnt2(kp,:,:); 
 
+% delete 
+for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(kp,:,:); end
+
+% temporary array with filtered engagement data
+q = q(kp,:,:); 
+
+% for each probe
 fld = ["KB05","KB03","KB02"];
+
+% initialize empty engagement array
 for i = 1:length(fld), S.(fld(i)) = nan(length(S.uninum),1); end
+
+% for each PDB
 for i = 1:length(S.pdb)
+
+    % if gene name present
     if ~isempty(S.gene{i})
+
+        % find corresponding cys in DrugMap data
         idx = find(contains(X.pep.gene_cys,";" + S.gene(i) + " C" + S.uninum(i) + ";"));    
+
+        % if we have it
         if ~isempty(idx)        
+
+            % find the version that is detected most frequently
             idx = argMax(idx,X.pep.det); idx = idx(1);
-            m = median(median(qnt2(idx,:,:),2,'omitnan'),1,'omitnan');
+            
+            % get median engagement
+            m = median(median(q(idx,:,:),2,'omitnan'),1,'omitnan');
+
+            % assign to our structural database
             for j = 1:length(fld), S.(fld(j))(i,1) = m(1,1,j); end
             
         end
     end
 end
 
-
+% save
 X = S; save("structural.db.v.2.mat",'X')
