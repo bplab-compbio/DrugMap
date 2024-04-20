@@ -1,4 +1,4 @@
-# Cysteine Set Enrichment Analysis (CSEA)
+# Cysteine Set Enrichment Analysis
 
 This directory contains the code required to run CSEA (Cysteine Set Enrichment Analysis), as well as the initial repository of cysteine sets which were used in DrugMap.
 
