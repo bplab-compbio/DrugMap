@@ -136,7 +136,7 @@ m = median(qnt(:,:,2),2,'omitnan');
 % this array is a logical which identifies the heterogeneous cysteines
 row = X.het.rank.KB03 < 0.05 & X.het.globalrank.KB03 < 0.05 & X.het.det.KB03 >= 0.5;
 
-%% find terms which are enriched among heterogeneous cysteines
+%% Run CSEA! We will find terms which are enriched among heterogeneous cysteines
 % recall that, since CSEA is a stochastic algorithm, p-value estimates will not reproduce exactly across runs
 C = load(in + "CSEA.repository.mat"); C = C.X;
 
