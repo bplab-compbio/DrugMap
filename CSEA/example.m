@@ -138,7 +138,7 @@ row = X.het.rank.KB03 < 0.05 & X.het.globalrank.KB03 < 0.05 & X.het.det.KB03 >= 
 
 %% Run CSEA! We will find terms which are enriched among heterogeneous cysteines
 % recall that, since CSEA is a stochastic algorithm, p-value estimates will not reproduce exactly across runs
-C = load(in + "CSEA.repository.mat"); C = C.X;
+C = load("CSEA.repository.mat"); C = C.X;
 
 % get accession + cysteine (i.e. O60701 C276) for the heterogeneous cysteines
 a = find(row);
