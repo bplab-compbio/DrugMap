@@ -1,7 +1,7 @@
 Here, we used machine learning to probe a fundamental question in drug discovery... **can structural information be used to infer cysteine ligandability**? Where do we start?
 
 <p align="center">
-  <img src="https://github.com/bplab-compbio/DrugMap/blob/main/src/images/structural.mapping.png" width="1200" height="300">
+  <img src="https://github.com/bplab-compbio/DrugMap/blob/main/src/images/structural.mapping.png" width="900" height="300">
 </p>
 
 We first aligned as many cysteines to the [Protein Data Bank](https://www.rcsb.org/) as possible and deconvolved protein structures into their corresponding rotamers, when available. For each cysteine, we chose representative structures while optimizing for both 1.) completeness of structural coverage and 2.) resolution.
