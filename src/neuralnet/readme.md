@@ -4,7 +4,7 @@ Here, we used machine learning to probe a fundamental question in drug discovery
   <img src="https://github.com/bplab-compbio/DrugMap/blob/main/src/images/structural.mapping.png" width="700" height="275">
 </p>
 
-We first aligned as many cysteines to the [Protein Data Bank](https://www.rcsb.org/) as possible and deconvolved protein structures into their corresponding rotamers, when available. For each cysteine, we chose representative structures while optimizing for both 1.) completeness of structural coverage and 2.) resolution.
+We first aligned as many cysteines to the [Protein Data Bank](https://www.rcsb.org/) as possible. We partitioned protein structures into their corresponding rotamers when available. For each cysteine, we chose representative structures while optimizing for both 1.) completeness of structural coverage and 2.) resolution.
 
 <p align="center">
   <img src="https://github.com/bplab-compbio/DrugMap/blob/main/src/images/neural.net.png" width="350" height="275">
