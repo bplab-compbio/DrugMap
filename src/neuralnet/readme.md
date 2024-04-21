@@ -1,4 +1,4 @@
-Here, we used machine learning to probe a fundamental question in drug discovery... **can structural information be used to infer cysteine ligandability**? Where do we start?
+Here, we used machine learning to probe a fundamental question in drug discovery... **can structural information be used to infer cysteine ligandability**? 
 
 <p align="center">
   <img src="https://github.com/bplab-compbio/DrugMap/blob/main/src/images/structural.mapping.png" width="700" height="275">
