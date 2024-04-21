@@ -10,4 +10,4 @@ We first aligned as many cysteines to the [Protein Data Bank](https://www.rcsb.o
   <img src="https://github.com/bplab-compbio/DrugMap/blob/main/src/images/neural.net.png" width="350" height="275">
 </p>
 
-We then fed a deep neural network both geometric and vectorized data, all encapsulating unique dimensions of a cysteine's structural locale, to allow the network to learn whether a cysteine is ligandable or not. We hope that users will find the structural data deposited herein to be a valuable starting point to train more sophisticated models in the future!
+We then fed a [deep neural network](https://github.com/bplab-compbio/DrugMap/blob/main/src/neuralnet/notebook.ipynb) both geometric and vectorized data, all encapsulating unique dimensions of a cysteine's structural locale, to allow the network to learn whether a cysteine is ligandable or not. We hope that users will find the structural data deposited herein to be a valuable starting point to further the community's quest in predicting cysteine ligandability!
