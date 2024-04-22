@@ -282,15 +282,11 @@ idx = ~contains(X.pep.id,"IADTB");
 fld = fieldnames(X.pep);
 for i = 1:length(fld), X.pep.(fld{i})(idx,:,:) = []; end
 
-% create empty fields
-X.pep.accession = repmat("",[length(X.pep.charge),1]);
-X.pep.gene = repmat("",[length(X.pep.charge),1]);
-X.pep.protein = repmat("",[length(X.pep.charge),1]);
-X.pep.seqvariant = repmat("",[length(X.pep.accession),1]);
-X.pep.oncovariant = repmat("",[length(X.pep.accession),1]);
-X.pep.cys = repmat("",[length(X.pep.accession),1]);
-X.pep.gene_cys = repmat("",[length(X.pep.accession),1]);
-X.pep.acc_cys = repmat("",[length(X.pep.accession),1]);
+% pre-allocate empty fields
+flds = ["accession","gene","protein","seqvariant","oncovariant","cys","gene_cys","acc_cys"];
+for i = 1:length(flds), X.pep.(flds(i)) =  repmat("",[size(X.pep.charge)]); end
+
+% don't forget met ox!
 X.pep.metox = false(length(X.pep.cys),1);
 X.pep.metox(contains(X.pep.id,"Oxidation")) = 1;
 
