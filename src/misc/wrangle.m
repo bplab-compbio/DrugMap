@@ -146,7 +146,7 @@ L = load(dirr + "\" + subdir(2) + "\" + subdir(2) + ".mat"); L = L.X;
 % merge peptide id
 X.tid = union(X.id,L.id);
 
-% initialize new array for abundances
+% pre-allocate new array for abundances
 X.("a2") = nan(height(X.tid),size(X.a,2) + size(L.a,2)); 
 
 % backfill data from first TMT
@@ -461,7 +461,7 @@ for i = 1:length(fld), X.pep.(fld(i))(del,:,:) = []; end
 % get unique peptides
 [u,row] = unique(X.pep.peptide);
 
-% initialize empty arrays
+% pre-allocate empty arrays
 X.pep.a2 = nan(length(u),size(X.pep.a, 2),4);
 X.pep.e2 = nan(length(u),size(X.pep.a, 2),3);
 
@@ -570,9 +570,14 @@ X.pep.eq = 200 * (X.pep.eq - 0.5);
 
 % collect unique column information for each cell line
 [u,col] = unique(X.line.name);
-b = X.line.batch(col);
-b = split(b,'_'); b = b(1,:,1)'; ub = unique(b);
+
+% batch
+b = X.line.batch(col); b = split(b,'_'); b = b(1,:,1)'; ub = unique(b);
+
+% Achilles ID
 ach_id = X.line.DepMap_ID(col);
+
+% lineage
 lin = X.line.lineage(col);
 
 % pre-allocate memory for different arrays
@@ -583,154 +588,259 @@ for i = 1:length(u), qnt(:,i,:) = median(X.pep.eq(:,strcmp(X.line.name,u(i)),:),
 for i = 1:length(u), st(:,i,:) = std(X.pep.eq(:,strcmp(X.line.name,u(i)),:),0,2,"omitnan"); end
 for i = 1:length(u), nd(:,i,:) = sum(~isnan(X.pep.eq(:,strcmp(X.line.name,u(i)),:)),2); end
 
-% delete cysteines with unconfident detection (i.e. detected in less than 2 runs at the spectrometer)
+% delete cysteines with unconfident detection (i.e. detected in less than 2 shots in the spectrometer. about 150 of these)
 del = find(sum(isnan(qnt(:,:,2)),2) == size(qnt,2));
+
+% get unique accessions
 [~,i1] = unique(X.pep.acc_cys);
+
+% remove unconfident detections
 i1 = setdiff(i1,del);
 
-% get unique peptides for methionine oxidations
-idcs = [];
+% get unique UNP + CYS attributions
+ii = [];
 for i = 1:length(i1)
+
+    % find peptides with redundant UNP + CYS attributions
     f = find(strcmp(X.pep.acc_cys,X.pep.acc_cys(i1(i))));
 
+    % if only one, ok
     if length(f) == 1
-        idcs = [idcs;f];
+        ii = [ii;f];
+
+    % if more than one
     else
+        
+        % find non met-oxidized version
         m = find(~X.pep.metox(f));
+
+        % if only one, ok 
         if length(m) == 1
-            idcs = [idcs;f(m)];
+            ii = [ii;f(m)];
+
+        % if more than one, just retain first
         elseif length(m) > 1
-            idcs = [idcs;f(m(1))];
+            ii = [ii;f(m(1))];
+
+        % if no non-oxidized peptide was detected
         elseif isempty(m)
+
+            % find oxidized variant
             m = find(X.pep.metox(f));
+
+            % if only one, ok
             if length(m) == 1
-                idcs = [idcs;f(m)];
+                ii = [ii;f(m)];
+
+            % if more than one, retain first
             elseif length(m) > 1
-                idcs = [idcs;f(m(1))];
+                ii = [ii;f(m(1))];
             end
         end
     end    
 
 end
 
-i2 = find(X.pep.metox);
-i3 = intersect(i2,idcs);
 
+% find peptides which are only present in oxoform
+i2 = find(X.pep.metox);
+
+% intersect with unique UNP + CYS
+i3 = intersect(i2,ii);
+
+% get modifications of these oxidized peptides
 mod = X.pep.modification(i3);
+
+% get cysteine attributions
 cys = X.pep.cys(i3);
 
-strs = repmat("",[length(idcs),1]);
+% pre-allocate vector for unique peptides w met ox
+ss = repmat("",[length(ii),1]);
+
+% for each oxidized peptide, convert relative positioning of oxidized met to absolute
 for i = 1:length(mod)
     
+    % get first (in linear sequence) cysteine in the peptide
     s = split(cys(i),";");
     s = s(~cellfun(@isempty,s));
     c = str2double(s);
     c = min(c);
 
+    % get positions of post-translational modifications on the peptide
     s = split(mod(i),";");
-    s = s(~cellfun(@isempty,s));
-    nums = str2double(string(regexp(s,'(?<=[\(]).+(?=[\)])','match')));
+    s = s(~cellfun(@isempty,s));    
 
-
-    f = find(contains(s,"Oxidation of "));
+    % these are relative positions on the peptide, beginning at 0
+    n = str2double(string(regexp(s,'(?<=[\(]).+(?=[\)])','match')));
+   
+    % get first instance of DTB
     g = find(contains(s,"IADTB of "));
+    dtb = min(n(g));
+    
+    % get positions of oxidation
+    f = find(contains(s,"Oxidation of "));    
+    oxpos = n(f);
 
-    dtb = min(nums(g));
-
-    oxpos = nums(f);
 
     pos = [];
+    % if only one oxidation
     if length(f) == 1
+
+        % find absolute position of met ox
         pos = c + oxpos - dtb;    
         
+    % if more than one
     elseif nnz(f) > 1
+
+        % collect all posiions
         for j = 1:length(f)            
             pos = [pos;c + oxpos(j) - dtb];
         end
         
     end
 
+    % get absolute position of oxidized methionine
     pos = eraseBetween(strrep(join(";M"+ pos)," ",""),1,1);
 
-    strs(idcs == i3(i)) = pos;
+    % assign
+    ss(ii == i3(i)) = pos;
 end
 
-% assemble final tables
+% assemble final tables. here we will retain as much information as possible by taking median across all oxoforms
 
-q2 = nan(length(idcs),size(qnt,2),3);
-for i = 1:length(idcs)
-    q2(i,:,:) = median(qnt(strcmp(X.pep.acc_cys,X.pep.acc_cys(idcs(i))),:,:),1,"omitnan");
+
+% engagement
+q2 = nan(length(ii),size(qnt,2),3);
+for i = 1:length(ii)
+    q2(i,:,:) = median(qnt(strcmp(X.pep.acc_cys,X.pep.acc_cys(ii(i))),:,:),1,"omitnan");
 end
 
-s2 = nan(length(idcs),size(st,2),3);
-for i = 1:length(idcs)
-    s2(i,:,:) = median(st(strcmp(X.pep.acc_cys,X.pep.acc_cys(idcs(i))),:,:),1,"omitnan");
+% standard deviation 
+s2 = nan(length(ii),size(st,2),3);
+for i = 1:length(ii)
+    s2(i,:,:) = median(st(strcmp(X.pep.acc_cys,X.pep.acc_cys(ii(i))),:,:),1,"omitnan");
 end
 
-d2 = nan(length(idcs),size(nd,2),3);
-for i = 1:length(idcs)
-    d2(i,:,:) = round(median(nd(strcmp(X.pep.acc_cys,X.pep.acc_cys(idcs(i))),:,:),1,"omitnan"));
+% detection
+d2 = nan(length(ii),size(nd,2),3);
+for i = 1:length(ii)
+    d2(i,:,:) = round(median(nd(strcmp(X.pep.acc_cys,X.pep.acc_cys(ii(i))),:,:),1,"omitnan"));
 end
 
-d = [eraseBetween(X.pep.accession(idcs),1,1), ...
-    eraseBetween(X.pep.gene(idcs),1,1), ...
-    eraseBetween(X.pep.protein(idcs),1,1), ...
-    X.pep.peptide(idcs), ...
-    eraseBetween(X.pep.cys(idcs),1,1), ...
-    strs];
 
+% now assemble final peptide annotations for each unique peptide
+d = [eraseBetween(X.pep.accession(ii),1,1), ...
+    eraseBetween(X.pep.gene(ii),1,1), ...
+    eraseBetween(X.pep.protein(ii),1,1), ...
+    X.pep.peptide(ii), ...
+    eraseBetween(X.pep.cys(ii),1,1), ...
+    ss];
+
+% clean up a bit; remove redundant ; at end of string
 for i = 1:height(d), for j = 1:size(d,2), s = split(d(i,j),";"); if length(s) > 1, d(i,j) = strjoin(s(1:end - 1),";"); end; end; end
 
 f = splitvars(table(d));
 f.Properties.VariableNames = ["Accession","Gene","Protein","Peptide","Cysteine","Methionine Oxidation"];
 
-g2 = repmat("",[length(f.Gene),1]);
-p2 = repmat("",[length(f.Gene),1]);
+
+% align assignments of alternative isoforms for gene and protein for display on website
+% for example; isoform info will be appended to genes even though this information is commonly reserved for UNP accessions. 
+% this step is meant to improve clarity of potential isoform attributions for a peptide
+
+
+g = repmat("",[length(f.Gene),1]);
+p = repmat("",[length(f.Gene),1]);
 for i = 1:length(f.Gene)
-    s1 = split(f.Gene(i),";");
-    ss2 = split(f.Protein(i),";");
-    if length(s1) > 1
-        l = unique(s1);
-        if length(s1) > length(l)
+
+    % split each peptide into its various gene attributions
+    a = split(f.Gene(i),";");
+
+    % split each peptide into its various UNP attributions
+    b = split(f.Protein(i),";");
+
+    % if more than one isoform attribution
+    if length(a) > 1
+
+        % get unique
+        l = unique(a);
+
+        % if more than one unique isoform possible
+        if length(a) > length(l)
+
+            % for each possible, unique gene
             for j = 1:length(l)
-                if nnz(strcmp(s1,l(j))) > 1
-                    ss2(strcmp(s1,l(j))) = ss2(strcmp(s1,l(j))) + "-" + string(1:nnz(strcmp(s1,l(j))))';
-                    s1(strcmp(s1,l(j))) = s1(strcmp(s1,l(j))) + "-" + string(1:nnz(strcmp(s1,l(j))))';                    
+
+                % append isoform information for each unique gene
+                if nnz(strcmp(a,l(j))) > 1
+                    b(strcmp(a,l(j))) = b(strcmp(a,l(j))) + "-" + string(1:nnz(strcmp(a,l(j))))';
+                    a(strcmp(a,l(j))) = a(strcmp(a,l(j))) + "-" + string(1:nnz(strcmp(a,l(j))))';                    
                 end
             end
         end
     end
 
-    g2(i) = join(s1,";");
-    p2(i) = join(ss2,";");
+    % re-join
+    g(i) = join(a,";");
+    p(i) = join(b,";");
 end
 
-f.Gene = g2;
-f.Protein = p2;
+% re-assign with unambiguous Gene/UNP attributions
+f.Gene = g;
+f.Protein = p;
 
-sct = ["KB05","KB03","KB02"];
-for jj = 1:3
+
+% now write tables
+s = ["KB05","KB03","KB02"];
+
+% for each scout
+for jj = 1:length(s)
+    
+    % ft:= final table
     ft = [];
+
+    % for each cell line, iteratively append numeric data
     for i = 1:size(q2,2), ft = [ft,[q2(:,i,jj),s2(:,i,jj),d2(:,i,jj)]]; end
     
+    % some cell lines not in DepMap --> just assign N/A
     ach_id(ismissing(ach_id)) = "N/A";
+
+    % write variable names of table
     fl = [];
     for i = 1:size(q2,2), fl = [fl,[u(i) + " (" + ach_id(i) + ")" + " Median Engagement (%)", u(i) + " (" + ach_id(i) + ")" + " Standard Deviation", u(i) + " (" + ach_id(i) + ")" + " # of Replicates"]]; end
-    t = table(ft);
-    t = splitvars(t);
+
+    % create table
+    t = splitvars(table(ft));
+
+    % assign variable names
     t.Properties.VariableNames = fl;
     
+    % merge numeric data and text data
     tb = [f,t];
-    writetable(tb,sct(jj) + ".xlsx")
+
+    % write table
+    writetable(tb,s(jj) + ".xlsx")
+
+    % display progress for the impatient
     disp(jj)
 end
 
 
+% let's save this as a .mat for later
+
+% delete the eq field
 X.pep = rmfield(X.pep,"eq");
+
+% update peptide info
 fld = string(fieldnames(X.pep));
-for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(idcs,:,:); end
+for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(ii,:,:); end
+
+% add engagement
 X.pep.e = q2;
+
+% add standard deviation
 X.pep.std = s2;
+
+% add detections
 X.pep.detections = d2;
 save("CDM.v.1.7.mat","X","-v7.3")
 
@@ -819,7 +929,7 @@ for i = 1:height(q)
     end   
 end
 
-% initialize logical which indicates mutational status of a gene encoding a peptide
+% pre-allocate logical which indicates mutational status of a gene encoding a peptide
 m = false(height(X.pep.gene_cys),length(ach_id));
 
 % get unique UNP accessions
@@ -914,7 +1024,7 @@ save("mutations.x.CDM.v.1.1.mat",'X')
 % now add new fields which will store the exact amino acid variants
 fld = ["new","old","mutation"];
 
-% initialize empty strings
+% pre-allocate empty strings
 for i = 1:length(fld), X.dat.(fld(i)) = repmat("",[height(X.dat.mutated),size(X.dat.mutated,2)]); end
 
 % get unique accessions
@@ -956,7 +1066,7 @@ end
 % get unique batch labels
 u = unique(X.line.batch);
 
-% initialize 
+% pre-allocate 
 X.dat.delta = nan(height(X.dat.qnt),size(X.dat.qnt,2),3);
 
 % for each batch
@@ -986,32 +1096,86 @@ end
 % save
 save("mutations.CDM.v.1.2.mat",'X','-v7.3')
 
-pos = str2double(M.Pos);
+% get position of mutation along chromosome (in basepairs)
+p = str2double(M.Pos);
+
+% append uniprot ID and mutation
 mp = M.UniprotID + " " + M.ProteinChange;
+
+% get unique mutations
 [~,ii] =unique(mp,'stable');
+
+% subset onto unique
 mp = mp(ii);
-pos2 = pos(ii);
+q = p(ii);
+
+% pre-allocate array which will contain the linear position of mutations
 X.dat.pos = nan(length(X.dat.gene),size(X.dat.mutated,2));
 
+% get unique accessions, first is empty
 ac = unique(X.dat.accession); ac(1) = [];
+
+% for each accession
 for i = 1:length(ac)
+
+    % find peptides which were assigned accession ac(i) by search engine
     ii = find(strcmp(X.dat.accession,ac(i)));
+
+    % grab first instance
     ij = ii(1);
+
+    % find mutated cell lines
     f = find(X.dat.mutated(ij,:));
+
+    % if any exist
     if ~isempty(f)
+
+        % get mutations
         uu = X.dat.mutation(ij,f);
+
+        % for each mutation
         for j = 1:length(f)
+
+            % get uniprot ID + mutation
             ky = X.dat.accession(ij) + " " + uu(j);
+
+            % find this mutation in CCLE
             g = find(strcmp(mp,ky));
+
+            % if it exists
             if ~isempty(g)
-                X.dat.pos(ii,f(j)) = pos2(g);
+
+                % assign position
+                X.dat.pos(ii,f(j)) = q(g);
             end
         end
+
+        % display progress for the impatient
         disp(i/length(ac))
     end
 end
 
+% save
 save("mutations.CDM.v.1.3.mat",'X','-v7.3')
+
+% pre-allocate vector which will contain a unique gene_cysteine attribution for each peptide
+X.dat.gc = repmat("",[length(X.dat.gene_cys),1]);
+
+% for each peptide
+for i = 1:length(X.dat.gene_cys)
+
+    % split into different attributions
+    sp = split(X.dat.gene_cys(i),';'); 
+    
+    % retain first; sp(1) is empty
+    X.dat.gc(i) = sp(2);
+end
+
+% pre-allocate logical which will indicate presence or absence of missense
+X.dat.missense = false(height(X.dat.gene_cys),size(X.dat.qnt,2));
+
+% quick loop to catch missense mutations
+for i = 1:height(X.dat.missense), for j = 1:size(X.dat.missense,2), if X.dat.mutated(i,j), if ~strcmp(X.dat.old(i,j),X.dat.new(i,j)), X.dat.missense(i,j) = 1; end;end;end; disp(i/length(X.dat.gene_cys)); end
 
 % load gene coordinates
 G = load("genomic.coordinates.mat");G = G.X;
@@ -1050,43 +1214,7 @@ for i = 1:height(X.dat.gene)
     end
 end
 
-X.dat.gene_cys1 = repmat("",[length(X.dat.gene_cys),1]);
-for i = 1:length(X.dat.gene_cys)
-    sp = split(X.dat.gene_cys(i),';'); sp = sp(2);
-    X.dat.gene_cys1(i) = sp;
-end
-
-X.dat.missense = false(height(X.dat.gene_cys),size(X.dat.qnt,2));
-for i = 1:height(X.dat.missense), for j = 1:size(X.dat.missense,2), if X.dat.mutated(i,j), if ~strcmp(X.dat.old(i,j),X.dat.new(i,j)), X.dat.missense(i,j) = 1; end;end;end; disp(i/length(X.dat.gene_cys)); end
-
-X.dat.chromosome_name = nan(length(X.dat.gene),1);
-for i = 1:height(X.dat.gene)
-    f = find(strcmp(G.dat.hgnc_symbol,X.dat.gene(i)));
-    if ~isempty(f)
-        if length(f) == 1            
-            try
-                if strcmp(G.dat.chromosome_name(f),"X")
-                    X.dat.chromosome_name(i) = 23;
-                elseif strcmp(G.dat.chromosome_name(f),"Y")
-                    X.dat.chromosome_name(i) = 24;
-                else
-                    X.dat.chromosome_name(i) = str2double(G.dat.chromosome_name(f));
-                end                
-            catch
-            end
-        end
-    end
-end
-
-X.dat.gene_cys1 = repmat("",[length(X.dat.gene_cys),1]);
-for i = 1:length(X.dat.gene_cys)
-    sp = split(X.dat.gene_cys(i),';'); sp = sp(2);
-    X.dat.gene_cys1(i) = sp;
-end
-
-X.dat.missense = false(height(X.dat.gene_cys),size(X.dat.qnt,2));
-for i = 1:height(X.dat.missense), for j = 1:size(X.dat.missense,2), if X.dat.mutated(i,j), if ~strcmp(X.dat.old(i,j),X.dat.new(i,j)), X.dat.missense(i,j) = 1; end;end;end; disp(i/length(X.dat.gene_cys)); end
-
+% save
 save("mutations.CDM.v.1.4.mat","X","-v7.3")
 %% integrate cysteines with structural data
 
@@ -1140,7 +1268,7 @@ q = q(kp,:,:);
 % for each probe
 fld = ["KB05","KB03","KB02"];
 
-% initialize empty engagement array
+% pre-allocate empty engagement array
 for i = 1:length(fld), S.(fld(i)) = nan(length(S.uninum),1); end
 
 % for each PDB
