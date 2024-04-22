@@ -977,8 +977,7 @@ for i = 1:length(u)
             % get batch mates
             i2 = setdiff(f,f(j));
 
-            % calculate local difference between individual cell line and
-            % its batch-mates
+            % calculate local difference between cell f(j) and batch-mates
             X.dat.delta(:,i1,:) = median(X.dat.qnt(:,i1,:) - X.dat.qnt(:,i2,:),2,'omitnan');
         end
     end   
