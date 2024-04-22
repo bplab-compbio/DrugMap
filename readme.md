@@ -9,7 +9,7 @@ Welcome to the home-page of **DrugMap: A quantitative pan-cancer analysis of cys
 In order to systematically identify proteins in cancer which contain covalent opportunities for cysteine liganding, we used a mass-spectrometry based assay to profile the landscape of cysteine reactivity across 416 cancer models. 
 
 <p align="center">
-  <img src="https://github.com/bplab-compbio/DrugMap/blob/main/src/images/cysteine.architecture.png" >
+  <img src="https://github.com/bplab-compbio/DrugMap/blob/main/src/images/cysteine.architecture.png"  width="600" height="600">
 </p>
 
 Along the way, we began to reveal principles which determine cysteine liganding across diverse structural and biological contexts. More on this [here](https://www.cell.com/cell/abstract/S0092-8674(24)00318-0#secsectitle0020).
