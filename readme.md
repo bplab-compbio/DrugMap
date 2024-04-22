@@ -13,7 +13,7 @@ Toward systematically identifying proteins in cancer which contain covalent oppo
   <img src="https://github.com/bplab-compbio/DrugMap/blob/main/src/images/cysteine.architecture.png"  width="600" height="600">
 </p>
 
-Along the way, we began to reveal principles which determine cysteine liganding across diverse protein-structural and oncogenic contexts. More on this [here](https://www.cell.com/cell/abstract/S0092-8674(24)00318-0#secsectitle0020).
+Along the way, we examined the influence of diverse protein-structural and oncogenic contexts on cysteine ligandability. More on this [here](https://www.cell.com/cell/abstract/S0092-8674(24)00318-0#secsectitle0020).
 
 To make this resource maximally helpful to the wider community of cancer biologists, cysteine sleuths, and other interested travelers, we have released essential methodology underpinning our analyses, including:
 
