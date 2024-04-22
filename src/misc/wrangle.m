@@ -306,18 +306,18 @@ for i = 1:height(sp)
 
         % if peptide is variant from canonical fasta
         if contains(sp2,"Variant")
-            splitty = split(X.pep.modification(i),';'); splitty = splitty(contains(splitty,"IADTB"));
-            s = string(regexp(splitty,'(?<=IADTB of C[\(]).+(?=[\)])','match'));                                    
+            l = split(X.pep.modification(i),';'); l = l(contains(l,"IADTB"));
+            s = string(regexp(l,'(?<=IADTB of C[\(]).+(?=[\)])','match'));                                    
             for k = 1:length(s)
-                sp3 = split(sp2(j),"Variant");
-                sp4 = upper(strrep(sp3(1),'-',''));
-                X.pep.oncovariant(i) = X.pep.oncovariant(i) + ";" + regexprep(upper(sp4),'-','');
-                sp4 = split(sp3(2),'(');
-                idx = find(strcmp(P.md.accession,sp4(1)));
+                v = split(sp2(j),"Variant");
+                t = upper(strrep(v(1),'-',''));
+                X.pep.oncovariant(i) = X.pep.oncovariant(i) + ";" + regexprep(upper(t),'-','');
+                t = split(v(2),'(');
+                idx = find(strcmp(P.md.accession,t(1)));
     
                 X.pep.gene(i) = X.pep.gene(i) + ";" + P.md.gene(idx);
                 X.pep.protein(i) = X.pep.protein(i) + ";" + P.md.protein(idx);
-                X.pep.accession(i) = X.pep.accession(i) + ";" + sp4(1);
+                X.pep.accession(i) = X.pep.accession(i) + ";" + t(1);
     
                 site = string(regexp(sp2(j),'(?<=[\(]).+(?=[\)])','match'));
                 X.pep.cys(i) = X.pep.cys(i) + ";" + string(str2double(site) + 1 + str2double(s(k)));
@@ -327,19 +327,19 @@ for i = 1:height(sp)
 
         % if not
         else            
-            splitty = split(X.pep.modification(i),';'); splitty = splitty(contains(splitty,"IADTB"));
-            s = string(regexp(splitty,'(?<=IADTB of C[\(]).+(?=[\)])','match'));            
+            l = split(X.pep.modification(i),';'); l = l(contains(l,"IADTB"));
+            s = string(regexp(l,'(?<=IADTB of C[\(]).+(?=[\)])','match'));            
             for k = 1:length(s)
-                sp4 = split(sp2(j),'(');
-                if any(contains(sp4,'_'))
-                    sp5 = split(sp4(1),'_'); X.pep.seqvariant(i) = sp5(2) + "_" + sp5(3);                    
-                    sp4 = sp5(2);                    
+                t = split(sp2(j),'(');
+                if any(contains(t,'_'))
+                    v = split(t(1),'_'); X.pep.seqvariant(i) = v(2) + "_" + v(3);                    
+                    t = v(2);                    
                 end
-                idx = find(strcmp(P.md.accession,sp4(1)));
+                idx = find(strcmp(P.md.accession,t(1)));
         
                 X.pep.gene(i) = X.pep.gene(i) + ";" + P.md.gene(idx);
                 X.pep.protein(i) = X.pep.protein(i) + ";" + P.md.protein(idx);
-                X.pep.accession(i) = X.pep.accession(i) + ";" + sp4(1);
+                X.pep.accession(i) = X.pep.accession(i) + ";" + t(1);
         
                 site = string(regexp(sp2(j),'(?<=[\(]).+(?=[\)])','match'));
                 X.pep.cys(i) =  X.pep.cys(i) + ";" + string(str2double(site) + 1 + str2double(s(k)));
@@ -527,7 +527,7 @@ for i = 1:3, X.pep.eq(:,:,i) = quantilenorm(X.pep.e(:,:,i)); end
 
 [u,col] = unique(X.line.name);
 lin = X.line.lineage(col);
-bch = X.line.batch(col);
+b = X.line.batch(col);
 
 
 % pre-allocate memory
@@ -570,8 +570,8 @@ X.pep.eq = 200 * (X.pep.eq - 0.5);
 
 % collect unique column information for each cell line
 [u,col] = unique(X.line.name);
-bch = X.line.batch(col);
-bch = split(bch,'_'); bch = bch(1,:,1)'; ubch = unique(bch);
+b = X.line.batch(col);
+b = split(b,'_'); b = b(1,:,1)'; ub = unique(b);
 ach_id = X.line.DepMap_ID(col);
 lin = X.line.lineage(col);
 
@@ -741,119 +741,250 @@ load("CCLE.mutations.mat");
 
 % get unique information for each cell line (cell line name, project Achilles ID, batch)
 [u,col] = unique(X.line.name);
-bch = X.line.batch(col);
-bch = split(bch,'_'); bch = bch(:,1)'; ubch = unique(bch);
+
+% get batch information
+b = X.line.batch(col); b = split(b,'_'); b = b(:,1)'; ub = unique(b);
+
+% write new vector with ...
+
+% achilles ID
 ach_id = X.line.DepMap_ID(col);
+
+% lineage
 lin = X.line.lineage(col);
-mutlines = unique(M.ModelID);
 
-% subset DrugMap on cell lines which have recorded mutations in CCLE
-[~,i1,i2] = intersect(mutlines,ach_id);
-qnt2 = qnt(:,i2,:); 
-bch = bch(i2); ach_id = ach_id(i2); u = u(i2);
+% get cell lines with profiled mutations in CCLE
+m = unique(M.ModelID);
 
-gn = repmat("",[height(qnt2),1]);
-for i = 1:height(qnt2)   
+% intersect DrugMap which have recorded mutations in CCLE
+[~,i1,i2] = intersect(m,ach_id);
+
+% subset
+q = qnt(:,i2,:); 
+
+% also subset column information
+b = b(i2); ach_id = ach_id(i2); u = u(i2);
+
+% pre-allocate vector which will contain gene labels
+gn = repmat("",[height(q),1]);
+
+% for each peptide
+for i = 1:height(q)   
+    
+    % split gene labels into all identifications output by search engine
     s = split(X.pep.gene(i),';');
+
+    % take unique
     s = unique(s(~cellfun(@isempty,s)));
+
+    % if there's only one gene
     if length(s) == 1
+
+        % accept
         gn(i) = s;
     end   
 end
 
-acn = repmat("",[height(qnt2),1]);
-for i = 1:height(qnt2)   
+% pre-allocate vector which will contain accession labels
+acn = repmat("",[height(q),1]);
+
+% for each peptide
+for i = 1:height(q)   
+
+    % split accessions into all identifications output by search engine
     s = split(X.pep.accession(i),';');
+
+    % take unique
     s = unique(s(~cellfun(@isempty,s)));
-    ss = [];
+
+    % for each unique accession
+    t = [];
     for j = 1:length(s)
+
+        % if alternative isoform, just take accession
         sp = split(s(j),'-');
-        ss = [ss;sp(1)];
+
+        % append
+        t = [t;sp(1)];
     end
-    s = unique(ss);
+
+    % take unique
+    s = unique(t);
+
+    % if only one unique accession (allowing for alternative isoforms)
     if length(s) == 1
+
+        % accept
         acn(i) = s;
     end   
 end
 
+% initialize logical which indicates mutational status of a gene encoding a peptide
+m = false(height(X.pep.gene_cys),length(ach_id));
 
-mut = false(height(X.pep.gene_cys),length(ach_id));
-ugn = unique(gn); ugn(1) = [];
-uacn = unique(acn); uacn(1) = [];
-for i = 1:length(uacn)    
-    if any(strcmp(M.UniprotID,uacn(i)))
-        mtd = M.ModelID(strcmp(M.UniprotID,uacn(i)));
-        if ~isempty(mtd)
-            [~,i1,i2] = intersect(ach_id,mtd);
-            if ~isempty(i1)            
-                row = strcmp(acn,uacn(i));
-                mut(row,i1) = 1;
+% get unique UNP accessions
+ua = unique(acn); 
+
+% first one is empty
+ua(1) = [];
+
+% for each accession
+for i = 1:length(ua)    
+
+    % if any mutations recorded for this accession in CCLE
+    if any(strcmp(M.UniprotID,ua(i)))
+
+        % get model names
+        id = M.ModelID(strcmp(M.UniprotID,ua(i)));
+
+        % if any models (there must be by construction)
+        if ~isempty(id)
+
+            % intersect with models profiled in DrugMap
+            [~,i1,i2] = intersect(ach_id,id);
+
+            % if overlap is not empty
+            if ~isempty(i1)          
+
+                % find rows in initial matrix which contain accession ua(i)
+                row = strcmp(acn,ua(i));
+
+                % assign mutation
+                m(row,i1) = 1;
             end        
         end
     end
-    disp(i/length(uacn))
+
+    % display progress for the impatient
+    disp(i/length(ua))
 end
 
-%bch = split(bch,'_'); bch = bch(1,:,1)'; ubatch = unique(bch);
+% get unique batches
+ub = unique(b);
 
-ubatch = unique(bch);
-db = [];for i = 1:length(ubatch),if nnz(strcmp(bch,ubatch(i))) < 3, db = [db;ubatch(i)];end;end
+% don't consider batches which are represented by less than 3 cell lines
+db = []; for i = 1:length(ub),if nnz(strcmp(b,ub(i))) < 3, db = [db;ub(i)];end;end
 
-del = find(contains(bch,db));
-mut(:,del) = []; qnt2(:,del,:) = [];
-bch(del) = []; ach_id(del) = []; u(del) = [];
+% find these under-represented batches
+del = find(contains(b,db));
 
+% also delete from engagement data
+q(:,del,:) = [];
 
-A.dat.qnt = qnt2;
-A.dat.mutated = mut;
-A.dat.gene = gn;
-A.dat.accession = acn;
-A.dat.gene_cys = X.pep.gene_cys;
-A.dat.accession_cys = X.pep.acc_cys;
+% also delete from mutation matrix
+m(:,del) = []; 
 
-A.line.batch = bch;
-A.line.DepMap_ID = ach_id;
-A.line.stripped_cell_line_name = u';
-X = A;save("mutations.x.CDM.v.1.1.mat",'X')
+% delete from batch string, achilles_id string, stripped_cell_line_name string
+b(del) = []; ach_id(del) = []; u(del) = [];
 
+% make new struct
 
-X.dat.new = repmat("",[height(X.dat.mutated),size(X.dat.mutated,2)]);
-X.dat.old = repmat("",[height(X.dat.mutated),size(X.dat.mutated,2)]);
-X.dat.mutation = repmat("",[height(X.dat.mutated),size(X.dat.mutated,2)]);
+clear X;
 
+% assign engagement
+X.dat.qnt = q;
 
-ug = unique(X.dat.accession); ug(1) = [];
-for i = 1:length(ug)
-    row = find(strcmp(X.dat.accession,ug(i)));
-    row2 = row(1);
+% assign mutations
+X.dat.mutated = m;
+
+% assign gene
+X.dat.gene = gn;
+
+% assign accession
+X.dat.accession = acn;
+
+% assign gene + cysteine labels
+X.dat.gene_cys = X.pep.gene_cys;
+
+% assign accession + cysteine labels
+X.dat.accession_cys = X.pep.acc_cys;
+
+% assign batch label
+X.line.batch = b;
+
+% assign DepMap_ID (Project Achilles ID)
+X.line.DepMap_ID = ach_id;
+
+% assign name of cell line (i.e. UACC257)
+X.line.stripped_cell_line_name = u';
+
+% save
+save("mutations.x.CDM.v.1.1.mat",'X')
+
+% now add new fields which will store the exact amino acid variants
+fld = ["new","old","mutation"];
+
+% initialize empty strings
+for i = 1:length(fld), X.dat.(fld(i)) = repmat("",[height(X.dat.mutated),size(X.dat.mutated,2)]); end
+
+% get unique accessions
+ua = unique(X.dat.accession); ua(1) = [];
+
+% for each accessions
+for i = 1:length(ua)
+
+    % find peptides which have been assigned accession ua(i)
+    a = find(strcmp(X.dat.accession,ua(i)));
+
+    % get accession
+    b = a(1);
+
+    % for each cell line
     for j = 1:size(X.dat.mutation,2)        
-        if any(X.dat.mutated(row,j))
-            r = find(strcmp(M.UniprotID,X.dat.accession(row2))&strcmp(M.ModelID,X.line.DepMap_ID(j)));
+
+        % if mutated 
+        if any(X.dat.mutated(a,j))
+
+            % find mutation in CCLE
+            r = find(strcmp(M.UniprotID,X.dat.accession(b))&strcmp(M.ModelID,X.line.DepMap_ID(j)));
+
+            % if it's actually there
             if ~isempty(r)
+
+                % assign information
                 X.dat.new(row,j) = strjoin(M.new(r));
                 X.dat.old(row,j) = strjoin(M.old(r));
                 X.dat.mutation(row,j) = strjoin(M.ProteinChange(r));
             end        
         end
     end
-    disp(i/length(ug))
+
+    % display progress for the impatient
+    disp(i/length(ua))
 end
 
+% get unique batch labels
 u = unique(X.line.batch);
+
+% initialize 
 X.dat.delta = nan(height(X.dat.qnt),size(X.dat.qnt,2),3);
+
+% for each batch
 for i = 1:length(u)
+
+    % find the cell lines in batch u(i)
     f = find(strcmp(X.line.batch,u(i)));
 
+    % if at least 3
     if length(f) >= 3
         
+        % for each cell line
         for j = 1:length(f)
+
+            % get cell line f(j)
             i1 = f(j);
+
+            % get batch mates
             i2 = setdiff(f,f(j));
+
+            % calculate local difference between individual cell line and
+            % its batch-mates
             X.dat.delta(:,i1,:) = median(X.dat.qnt(:,i1,:) - X.dat.qnt(:,i2,:),2,'omitnan');
         end
     end   
 end
 
+% save
 save("mutations.CDM.v.1.2.mat",'X','-v7.3')
 
 pos = str2double(M.Pos);
@@ -883,18 +1014,34 @@ end
 
 save("mutations.CDM.v.1.3.mat",'X','-v7.3')
 
+% load gene coordinates
 G = load("genomic.coordinates.mat");G = G.X;
 
+% pre-allocate array which will store chromosome name of each gene
 X.dat.chromosome_name = nan(length(X.dat.gene),1);
+
+% for each gene
 for i = 1:height(X.dat.gene)
+
+    % find gene i in G
     f = find(strcmp(G.dat.hgnc_symbol,X.dat.gene(i)));
+
+    % if exists
     if ~isempty(f)
+
+        % if only one exists
         if length(f) == 1            
             try
+                
+                % assign X --> 23
                 if strcmp(G.dat.chromosome_name(f),"X")
                     X.dat.chromosome_name(i) = 23;
+
+                % assign Y --> 24
                 elseif strcmp(G.dat.chromosome_name(f),"Y")
                     X.dat.chromosome_name(i) = 24;
+
+                % assign 1:22 --> 1:22
                 else
                     X.dat.chromosome_name(i) = str2double(G.dat.chromosome_name(f));
                 end                
