@@ -1,4 +1,5 @@
 %% First, let's calculate engagement over our pre-wrangled .mat (see https://drugmap.net) and find cysteines to analyze.
+%% This code block is not necessary to run CSEA but demonstrates and example of how we analyzed our data
 
 % quantile normalize
 for i = 1:3, X.pep.eq(:,:,i) = quantilenorm(X.pep.e(:,:,i)); end
