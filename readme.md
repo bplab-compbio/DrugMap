@@ -1,6 +1,6 @@
 # DrugMap
 
-Welcome to the home-page of **DrugMap: A quantitative pan-cancer analysis of cysteine ligandability**! <br />
+Welcome to the home-page of **DrugMap: A quantitative pan-cancer analysis of cysteine ligandability**! __
 
 <p align="center">
   <img src="https://github.com/bplab-compbio/DrugMap/blob/main/src/images/circos.png" width="700" height="600">
