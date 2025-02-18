@@ -147,22 +147,22 @@ L = load(dirr + "\" + subdir(2) + "\" + subdir(2) + ".mat"); L = L.X;
 X.tid = union(X.id,L.id);
 
 % pre-allocate new array for abundances
-X.("a2") = nan(height(X.tid),size(X.a,2) + size(L.a,2)); 
+X.("t") = nan(height(X.tid),size(X.a,2) + size(L.a,2)); 
 
 % backfill data from first TMT
 [~,i1,i2] = intersect(X.tid, X.id);
-X.a2(i1,1:size(X.a,2)) = X.a(i2,:);
+X.t(i1,1:size(X.a,2)) = X.a(i2,:);
 
 % backfill data from new TMT
 [~,i1,i2] = intersect(X.tid, L.id);
-X.a2(i1,size(X.a,2)+ 1:size(X.a2,2)) = L.a(i2,:);
+X.t(i1,size(X.a,2)+ 1:size(X.t,2)) = L.a(i2,:);
 
 % add batch information
 X.batch = [X.batch,L.batch];
 
 % replace old peptide id field with the concatenated version
 X.id = X.tid; 
-X.a = X.a2; X = rmfield(X,["a2","tid","Sequence","Proteins","ModSeq","Modifications","Charge"]);
+X.a = X.t; X = rmfield(X,["t","tid","Sequence","Proteins","ModSeq","Modifications","Charge"]);
 
 % now loop and collect all TMTs into one array
 for x = 3:length(subdir)    
@@ -174,15 +174,15 @@ for x = 3:length(subdir)
     X.tid = union(X.id,L.id);
 
     % make new abundance array with space for new TMT
-    X.("a2") = nan(height(X.tid),size(X.a,2) + size(L.a,2)); 
+    X.("t") = nan(height(X.tid),size(X.a,2) + size(L.a,2)); 
     
     % backfill new abundance array with original 
     [~,i1,i2] = intersect(X.tid, X.id);
-    X.a2(i1,1:size(X.a,2)) = X.a(i2,:);
+    X.t(i1,1:size(X.a,2)) = X.a(i2,:);
     
     % backfill new abundance array with new TMT
     [~,i1,i2] = intersect(X.tid, L.id);
-    X.a2(i1,size(X.a,2)+ 1:size(X.a2,2)) = L.a(i2,:);
+    X.t(i1,size(X.a,2)+ 1:size(X.t,2)) = L.a(i2,:);
 
     % append batch info
     X.batch = [X.batch,L.batch];
@@ -191,7 +191,7 @@ for x = 3:length(subdir)
     X.id = X.tid; 
 
     % replace old arrays with updated arrays
-    X.a = X.a2; X = rmfield(X,["a2","tid"]);    
+    X.a = X.t; X = rmfield(X,["t","tid"]);    
     
     % display the height of the abundance array for fun
     disp(height(X.a));
@@ -216,8 +216,7 @@ save("CDM.v.1.1.mat","X","-v7.3")
 X.a(X.a == 0) = NaN;
 
 
-str = strrep(X.batch,'.mat','');
-str2 = str;
+str = strrep(X.batch,'.mat',''); tmp = str;
 
 % load metadata
 t = string(readcell("DrugMap.metadata.xlsx"));
@@ -229,14 +228,13 @@ str = regexprep(str,'.txt','');
 for i = 1:length(u)
     i1 = strcmp(str,u(i));
     i2 = find(strcmp(t(:,1),u(i)));
-    str2(i1) = t(i2,2);
+    tmp(i1) = t(i2,2);
 end
 
 % add metadata
-X.line.name = str2;
-X.line.batch = X.batch;
-X = rmfield(X,'batch');
-X.pep.a = X.a; X =rmfield(X,'a');
+X.line.name = tmp;
+X.line.batch = X.batch; X = rmfield(X,'batch');
+X.pep.a = X.a; X = rmfield(X,'a');
 X.pep.id = X.id; X = rmfield(X,'id');
 X.line.trt = repmat(["KB05","KB03","KB02","DMSO"],[1,size(X.pep.a,2)/4]);
 
@@ -248,9 +246,9 @@ X.line.batch = strrep(X.line.batch,'.txt'," ");
 
 % 2D array into 3D
 u = ["KB05","KB03","KB02","DMSO"];
-X.pep.a2 = nan(height(X.pep.a),size(X.pep.a,2)/4,4);
-for i = 1:length(u), X.pep.a2(:,:,i) = X.pep.a(:,strcmp(X.line.trt,u(i))); end
-X.pep.a = X.pep.a2; X.pep = rmfield(X.pep,"a2");
+X.pep.t = nan(height(X.pep.a),size(X.pep.a,2)/4,4);
+for i = 1:length(u), X.pep.t(:,:,i) = X.pep.a(:,strcmp(X.line.trt,u(i))); end
+X.pep.a = X.pep.t; X.pep = rmfield(X.pep,"t");
 
 i1 = find(strcmp(X.line.trt,"DMSO"));
 X.line.name = X.line.name(i1); X.line.batch = X.line.batch(i1);
@@ -379,9 +377,7 @@ end
 % manually fix lineages of cell lines which are not in DepMap
 
 % bile duct
-X.line.lineage(contains(X.line.name,"ICC")) = "bile_duct";
-X.line.lineage(strcmp(X.line.name,"OZ")) = "bile_duct";
-X.line.lineage(strcmp(X.line.name,"MG984")) = "bile_duct";
+X.line.lineage(strcmp(X.line.name,"MG984")|strcmp(X.line.name,"OZ")|contains(X.line.name,"ICC")) = "bile_duct";
 
 % lung
 X.line.lineage(contains(X.line.name,"MGH")) = "lung";
@@ -390,24 +386,23 @@ X.line.lineage(contains(X.line.name,"MGH")) = "lung";
 X.line.lineage(contains(X.line.name,"BRX")) = "breast";
 
 % skin
-X.line.lineage(strcmp(X.line.name,"COLO853")) = "skin";
-X.line.lineage(strcmp(X.line.name,"WM793B")) = "skin";
+X.line.lineage(strcmp(X.line.name,"COLO853")|strcmp(X.line.name,"WM793B")) = "skin";
 
 % ovary
 X.line.lineage(strcmp(X.line.name,"OVCA429")) = "ovary";
 
 % skin
-X.line.lineage(strcmp(X.line.name,"A375S2")) = "skin";
-X.line.lineage(strcmp(X.line.name,"MEL182")) = "skin";
-X.line.lineage(strcmp(X.line.name,"MEL167")) = "skin";
+X.line.lineage(strcmp(X.line.name,"MEL167")|strcmp(X.line.name,"MEL182")|strcmp(X.line.name,"A375S2")) = "skin";
 
 % brain/glioma neurosphere
-X.line.lineage(strcmp(X.line.name,"MGG75")) = "brain";
-X.line.lineage(strcmp(X.line.name,"MGG23")) = "brain";
-X.line.lineage(strcmp(X.line.name,"MGG123")) = "brain";
+X.line.lineage(strcmp(X.line.name,"MGG123")|strcmp(X.line.name,"MGG23")|strcmp(X.line.name,"MGG75")) = "brain";
 
-% make sure all fields are tall
+% make sure that some fields are tall ...
+
+% ... name
 X.line.name = X.line.name';
+
+% ... batch
 X.line.batch = X.line.batch';
 
 % save
@@ -458,8 +453,8 @@ for i = 1:length(fld), X.pep.(fld(i))(del,:,:) = []; end
 [u,row] = unique(X.pep.peptide);
 
 % pre-allocate empty arrays
-X.pep.a2 = nan(length(u),size(X.pep.a, 2),4);
-X.pep.e2 = nan(length(u),size(X.pep.a, 2),3);
+X.pep.t = nan(length(u),size(X.pep.a, 2),4);
+X.pep.u = nan(length(u),size(X.pep.a, 2),3);
 
 % for each peptide
 for i = 1:length(u)
@@ -468,17 +463,17 @@ for i = 1:length(u)
     j = strcmp(X.pep.peptide,u(i));
 
     % median
-    X.pep.a2(i,:,:) = median(X.pep.a(j,:,:),1,'omitnan');    
-    X.pep.e2(i,:,:) = median(X.pep.e(j,:,:),1,'omitnan');    
+    X.pep.t(i,:,:) = median(X.pep.a(j,:,:),1,'omitnan');    
+    X.pep.u(i,:,:) = median(X.pep.e(j,:,:),1,'omitnan');    
 
     % track progress
     disp(i / length(u))
 end
 
 % now trim the .pep struct
-fld = setdiff(string(fieldnames(X.pep)),["a","a2","e","e2"]);
+fld = setdiff(string(fieldnames(X.pep)),["a","t","e","u"]);
 for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(row,:,:); end
-X.pep.a = X.pep.a2; X.pep.e = X.pep.e2; X.pep = rmfield(X.pep,["a2","e2"]); 
+X.pep.a = X.pep.t; X.pep.e = X.pep.u; X.pep = rmfield(X.pep,["t","u"]); 
 
 % recalculate peptide detection
 X.pep.det = sum(~isnan(X.pep.a(:,:,4)),2);
@@ -571,7 +566,7 @@ X.pep.eq = 200 * (X.pep.eq - 0.5);
 b = X.line.batch(col); b = split(b,'_'); b = b(1,:,1)'; ub = unique(b);
 
 % Achilles ID
-ach_id = X.line.DepMap_ID(col);
+h = X.line.DepMap_ID(col);
 
 % lineage
 lin = X.line.lineage(col);
@@ -706,21 +701,21 @@ end
 
 
 % engagement
-q2 = nan(length(ii),size(qnt,2),3);
+x = nan(length(ii),size(qnt,2),3);
 for i = 1:length(ii)
-    q2(i,:,:) = median(qnt(strcmp(X.pep.acc_cys,X.pep.acc_cys(ii(i))),:,:),1,"omitnan");
+    x(i,:,:) = median(qnt(strcmp(X.pep.acc_cys,X.pep.acc_cys(ii(i))),:,:),1,"omitnan");
 end
 
 % standard deviation 
-s2 = nan(length(ii),size(st,2),3);
+y = nan(length(ii),size(st,2),3);
 for i = 1:length(ii)
-    s2(i,:,:) = median(st(strcmp(X.pep.acc_cys,X.pep.acc_cys(ii(i))),:,:),1,"omitnan");
+    y(i,:,:) = median(st(strcmp(X.pep.acc_cys,X.pep.acc_cys(ii(i))),:,:),1,"omitnan");
 end
 
 % detection
-d2 = nan(length(ii),size(nd,2),3);
+z = nan(length(ii),size(nd,2),3);
 for i = 1:length(ii)
-    d2(i,:,:) = round(median(nd(strcmp(X.pep.acc_cys,X.pep.acc_cys(ii(i))),:,:),1,"omitnan"));
+    z(i,:,:) = round(median(nd(strcmp(X.pep.acc_cys,X.pep.acc_cys(ii(i))),:,:),1,"omitnan"));
 end
 
 
@@ -795,14 +790,14 @@ for jj = 1:length(s)
     ft = [];
 
     % for each cell line, iteratively append numeric data
-    for i = 1:size(q2,2), ft = [ft,[q2(:,i,jj),s2(:,i,jj),d2(:,i,jj)]]; end
+    for i = 1:size(x,2), ft = [ft,[x(:,i,jj),y(:,i,jj),z(:,i,jj)]]; end
     
     % some cell lines not in DepMap --> just assign N/A
-    ach_id(ismissing(ach_id)) = "N/A";
+    ach(ismissing(ach)) = "N/A";
 
     % write variable names of table
     fl = [];
-    for i = 1:size(q2,2), fl = [fl,[u(i) + " (" + ach_id(i) + ")" + " Median Engagement (%)", u(i) + " (" + ach_id(i) + ")" + " Standard Deviation", u(i) + " (" + ach_id(i) + ")" + " # of Replicates"]]; end
+    for i = 1:size(x,2), fl = [fl,[u(i) + " (" + ach(i) + ")" + " Median Engagement (%)", u(i) + " (" + ach(i) + ")" + " Standard Deviation", u(i) + " (" + ach(i) + ")" + " # of Replicates"]]; end
 
     % create table
     t = splitvars(table(ft));
@@ -831,13 +826,15 @@ fld = string(fieldnames(X.pep));
 for i = 1:length(fld), X.pep.(fld(i)) = X.pep.(fld(i))(ii,:,:); end
 
 % add engagement
-X.pep.e = q2;
+X.pep.e = x;
 
 % add standard deviation
-X.pep.std = s2;
+X.pep.std = y;
 
 % add detections
-X.pep.detections = d2;
+X.pep.detections = z;
+
+% save
 save("CDM.v.1.7.mat","X","-v7.3")
 
 %% integrate CDM with mutations
@@ -854,7 +851,7 @@ b = X.line.batch(col); b = split(b,'_'); b = b(:,1)'; ub = unique(b);
 % write new vector with ...
 
 % achilles ID
-ach_id = X.line.DepMap_ID(col);
+h = X.line.DepMap_ID(col);
 
 % lineage
 lin = X.line.lineage(col);
@@ -863,13 +860,13 @@ lin = X.line.lineage(col);
 m = unique(M.ModelID);
 
 % intersect DrugMap which have recorded mutations in CCLE
-[~,i1,i2] = intersect(m,ach_id);
+[~,i1,i2] = intersect(m,ach);
 
 % subset
 q = qnt(:,i2,:); 
 
 % also subset column information
-b = b(i2); ach_id = ach_id(i2); u = u(i2);
+b = b(i2); h = ach(i2); u = u(i2);
 
 % pre-allocate vector which will contain gene labels
 gn = repmat("",[height(q),1]);
@@ -926,7 +923,7 @@ for i = 1:height(q)
 end
 
 % pre-allocate logical which indicates mutational status of a gene encoding a peptide
-m = false(height(X.pep.gene_cys),length(ach_id));
+m = false(height(X.pep.gene_cys),length(ach));
 
 % get unique UNP accessions
 ua = unique(acn); 
@@ -947,7 +944,7 @@ for i = 1:length(ua)
         if ~isempty(id)
 
             % intersect with models profiled in DrugMap
-            [~,i1,i2] = intersect(ach_id,id);
+            [~,i1,i2] = intersect(ach,id);
 
             % if overlap is not empty
             if ~isempty(i1)          
@@ -981,7 +978,7 @@ q(:,del,:) = [];
 m(:,del) = []; 
 
 % delete from batch string, achilles_id string, stripped_cell_line_name string
-b(del) = []; ach_id(del) = []; u(del) = [];
+b(del) = []; ach(del) = []; u(del) = [];
 
 % make new struct
 
@@ -1009,7 +1006,7 @@ X.dat.accession_cys = X.pep.acc_cys;
 X.line.batch = b;
 
 % assign DepMap_ID (Project Achilles ID)
-X.line.DepMap_ID = ach_id;
+X.line.DepMap_ID = ach;
 
 % assign name of cell line (i.e. UACC257)
 X.line.stripped_cell_line_name = u';
